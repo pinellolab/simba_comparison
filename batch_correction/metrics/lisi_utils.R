@@ -1,21 +1,17 @@
-normalize_values <- function(myData, colns, min_val=1, max_val=2){
+normalize_values <- function(myData, method_use, colns, min_val=1, max_val=2){
   med_val <- c()
   med_val_norm <- c()
-  methods_use <- c()
-  for(c in colnames(myData)){
-    methods_use <- c(methods_use, c)
-    mi <- median(myData[,c])
-    med_val <- c(med_val, mi)
-    med_val_norm <- c(med_val_norm, (mi - min_val) / (max_val - min_val))
-  }
-  myDataNorm <- data.frame('X1'=methods_use, 'X2'=med_val, 'X3'=med_val_norm)
+  mi <- median(myData[,1])
+  med_val <- c(med_val, mi)
+  med_val_norm <- c(med_val_norm, (mi - min_val) / (max_val - min_val))
+  myDataNorm <- data.frame('X1'=method_use, 'X2'=med_val, 'X3'=med_val_norm)
   colnames(myDataNorm) <- colns
   return(myDataNorm)
 }
 
 
-get_celltype_common <- function(data_dir, fn){
-  myData <- read.csv(paste0(data_dir, fn), head=T, row.names = 1, check.names = FALSE)
+get_celltype_common <- function(data_path){
+  myData <- read.csv(data_path, head=T, row.names = 1, check.names = FALSE)
   colnames(myData)[grep('[cC]ell_?[tT]ype',colnames(myData))] <- 'cell_type'
   colnames(myData)[grep('([bB]atch)|(BATCH)',colnames(myData))] <- 'batch'
   print(dim(myData))
@@ -52,10 +48,10 @@ get_celltype_common <- function(data_dir, fn){
 }
 
 
-run_LISI_final <- function(fn, data_dir, save_dir, eval_metric, methods_use, plx=40){
+run_LISI_final <- function(fn, data_path, save_dir, eval_metric, methods_use, plx=40){
   
-  # myPCA <- read.csv(paste0(data_dir, fn), head=T, row.names = 1, check.names = FALSE)
-  myPCA <- ezTools::fast_read_table(paste0(data_dir, fn), row.names = T, col.names = T, sep = ",", check.names = FALSE)
+  # myPCA <- read.csv(paste0(data_path, fn), head=T, row.names = 1, check.names = FALSE)
+  myPCA <- read.table(data_path, head = T, row.names = 1, check.names = FALSE)
   cpcs <- grep('([Pp][Cc]_?)|(V)|(Harmony)|(W)',colnames(myPCA))
   cpcs <- cpcs[1:20]
   lisi_embeddings <- myPCA[,cpcs]
@@ -72,15 +68,16 @@ run_LISI_final <- function(fn, data_dir, save_dir, eval_metric, methods_use, plx
   
   lisi_batch <- subset(lisi_res,select=c('batch','cell'))
   lisi_celltype <- subset(lisi_res,select=c('cell_type','cell'))
-
-  # write.table(lisi_batch, paste0(this_dir,eval_metric,methods_use,'/','lisi_batch_',plx,'.txt'), quote=F, sep='\t', row.names=T, col.names=NA)
-  # write.table(lisi_celltype,paste0(this_dir,eval_metric,methods_use,'/','lisi_celltype_',plx,'.txt'), quote=F, sep='\t', row.names=T, col.names=NA)
-  dir.create(paste0(this_dir,eval_metric,methods_use,'/'), showWarnings = F)
-  ezTools::fast_save_table(lisi_batch, paste0(this_dir,eval_metric,methods_use,'/'), paste0('lisi_batch_',plx,'.txt'),
-                           row.names = T, col.names = T, quote = F, sep = "\t")
   
-  ezTools::fast_save_table(lisi_celltype, paste0(this_dir,eval_metric,methods_use,'/'), paste0('lisi_celltype_',plx,'.txt'),
-                           row.names = T, col.names = T, quote = F, sep = "\t")
+  dir.create( paste0(save_dir, '/lisi_tmpdir/') )
+  write.table(lisi_batch, paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_batch_',plx,'.txt'), quote=F, sep='\t', row.names=T, col.names=NA)
+  write.table(lisi_celltype,paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_celltype_',plx,'.txt'), quote=F, sep='\t', row.names=T, col.names=NA)
+  #dir.create(paste0(this_dir,eval_metric,methods_use,'/'), showWarnings = F)
+  #write.table(lisi_batch, file = paste0(save_dir,'/', methods_use, "_", eval_metric, ".txt"), 
+  #                         row.names = T, col.names = T, quote = F, sep = "\t")
+  
+  #write.table(lisi_celltype, file = paste0(this_dir,eval_metric,methods_use,'/'), paste0('lisi_celltype_',plx,'.txt'),
+  #                         row.names = T, col.names = T, quote = F, sep = "\t")
 }
 
 
@@ -88,7 +85,7 @@ run_LISI_final_dataset9 <- function(fn, data_dir, save_dir, eval_metric, methods
   
   
   # myPCA <- read.csv(paste0(data_dir, fn), head=T, row.names = 1, check.names = FALSE)
-  myPCA <- ezTools::fast_read_table(paste0(data_dir, fn), row.names = T, col.names = T, sep = ",", check.names = FALSE)
+  myPCA <- read.table(paste0(data_dir, fn), row.names = T, col.names = T, sep = ",", check.names = FALSE)
   cpcs <- grep('([Pp][Cc]_?)|(V)|(Harmony)|(W)',colnames(myPCA))
   cpcs <- cpcs[1:20]
   
@@ -112,7 +109,7 @@ run_LISI_final_dataset9 <- function(fn, data_dir, save_dir, eval_metric, methods
   # write.table(lisi_batch, paste0(this_dir,eval_metric,methods_use,'/','lisi_batch_',plx,'.txt'), quote=F, sep='\t', row.names=T, col.names=NA)
   # write.table(lisi_celltype,paste0(this_dir,eval_metric,methods_use,'/','lisi_celltype_',plx,'.txt'), quote=F, sep='\t', row.names=T, col.names=NA)
   dir.create(paste0(this_dir,eval_metric,methods_use,'/'), showWarnings = F)
-  ezTools::fast_save_table(lisi_batch, paste0(this_dir,eval_metric,methods_use,'/'), paste0('lisi_batch_',plx,'.txt'),
+  write.table(lisi_batch, file = paste0(save_dir, '/', methods_use, '_', eval_metric, '.txt'),
                            row.names = T, col.names = T, quote = F, sep = "\t")
   
   # ezTools::fast_save_table(lisi_celltype, paste0(this_dir,eval_metric,methods_use,'/'), paste0('lisi_celltype_',plx,'.txt'),
@@ -135,26 +132,28 @@ summary_LISI_d9 <- function(this_dir, plottitle='LISI - dataset', plx=40, eval_m
   write.csv(median_iLISI,paste0(this_dir, eval_metric, "result/", plx, '/', 'summary_median_', plx, '.csv'), 
             quote=F, row.names=F)
 }
-summary_LISI <- function(this_dir, plottitle='LISI - dataset', plx=40, eval_metric='LISI/',ht=400, wd=400){
-  iLISI_df <- read.csv(paste0(this_dir, eval_metric,"result/",plx,"/iLISI_summary.csv"), head=T, check.names = F)
+
+
+summary_LISI <- function(save_dir, methods_use, plottitle='LISI - dataset', plx=40, eval_metric='LISI',ht=400, wd=400){
+  #iLISI_df <- read.csv(paste0(this_dir, eval_metric,"result/",plx,"/iLISI_summary.csv"), head=T, check.names = F)
+  iLISI_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_batch_',plx,'.txt'), head=T, check.names = F, row.names = 1)
   colns <- c('methods_use', 'iLISI_median', 'iLISI_median_norm')
   # median_iLISI <- normalize_values(iLISI_df, colns, min_val=1, max_val=length(meta_ls$batches))
-  median_iLISI <- normalize_values(iLISI_df, colns, min_val=min(iLISI_df), max_val=max(iLISI_df))
+  median_iLISI <- normalize_values(iLISI_df, methods_use, colns, min_val=min(iLISI_df[,1]), max_val=max(iLISI_df[,1]))
   mini <- min(median_iLISI$iLISI_median_norm)
   maxi <- max(median_iLISI$iLISI_median_norm)
   median_iLISI$iLISI_median_norm2 <- (median_iLISI$iLISI_median_norm - mini) / (maxi - mini)
   
   
-  cLISI_df <- read.csv(paste0(this_dir,eval_metric,"result/",plx,"/cLISI_summary.csv"), head=T, check.names = F)
+  #cLISI_df <- read.csv(paste0(this_dir,eval_metric,"result/",plx,"/cLISI_summary.csv"), head=T, check.names = F)
+  cLISI_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_celltype_',plx,'.txt'), head=T, check.names = F, row.names = 1)
   colns <- c('methods_use', 'cLISI_median', 'cLISI_median_norm')
   # median_cLISI <- normalize_values(cLISI_df, colns, min_val=1, max_val=length(meta_ls$celltypels))
-  median_cLISI <- normalize_values(cLISI_df, colns, min_val=min(cLISI_df), max_val=max(cLISI_df))
+  median_cLISI <- normalize_values(cLISI_df, methods_use, colns, min_val=min(cLISI_df[,1]), max_val=max(cLISI_df[,1]))
   median_cLISI$cLISI_median_norm_sub <- 1 - median_cLISI$cLISI_median_norm
   minc <- min(median_cLISI$cLISI_median_norm_sub)
   maxc <- max(median_cLISI$cLISI_median_norm_sub)
   median_cLISI$cLISI_median_norm_sub2 <- (median_cLISI$cLISI_median_norm_sub - minc) / (maxc - minc)
-
-  
   
   final_df = merge(median_iLISI, median_cLISI, by="methods_use")
   final_df$sum_normXY <- final_df$iLISI_median_norm2 + final_df$cLISI_median_norm_sub2
@@ -164,13 +163,13 @@ summary_LISI <- function(this_dir, plottitle='LISI - dataset', plx=40, eval_metr
   
   # write.table(final_df,paste0(this_dir, eval_metric, "result/", plx, '/', 'summary_median_', plx, '.txt'), 
   #             quote=F, sep='\t', row.names=T, col.names=T)
-  write.csv(final_df,paste0(this_dir, eval_metric, "result/", plx, '/', 'LISI_summary_median_', plx, '.csv'), 
+  write.table(final_df, file = paste0(save_dir, methods_use, '_', eval_metric, "_", plx, '.txt'), 
               quote=F, row.names=F)
   
   
   # plot final LISI
-  plot_final_LISI(final_df, plottitle, this_dir, plx, ht, wd, eval_metric, 
-                  xstring = 'cLISI_median_norm_sub', ystring = 'iLISI_median_norm', plottype = 'methods_use')
+  #plot_final_LISI(final_df, plottitle, this_dir, plx, ht, wd, eval_metric, 
+  #                xstring = 'cLISI_median_norm_sub', ystring = 'iLISI_median_norm', plottype = 'methods_use')
   
 }
 
@@ -450,7 +449,7 @@ summary_LISI_d6 <- function(dataset_use, this_dir='', plx = 40, eval_metric = 'L
   colns <- c('methods_use', 'cLISI_median', 'cLISI_median_norm')
   # lsct <- get_all_celltype_d6(data_dir,'dataset6_raw_pca.csv')
   # median_cLISI <- normalize_values(cLISI_df, colns, min_val=1, max_val=length(lsct$ct_common))
-  median_cLISI <- normalize_values(cLISI_df, colns, min_val=min(cLISI_df), max_val=max(cLISI_df))
+  median_cLISI <- normalize_values(cLISI_df, colns, min_val=min(cLISI_df[,1]), max_val=max(cLISI_df[,1]))
   median_cLISI$cLISI_median_norm_sub <- 1 - median_cLISI$cLISI_median_norm
   minc <- min(median_cLISI$cLISI_median_norm_sub)
   maxc <- max(median_cLISI$cLISI_median_norm_sub)
@@ -476,7 +475,7 @@ summary_LISI_d6 <- function(dataset_use, this_dir='', plx = 40, eval_metric = 'L
   # iLISI_df <- as.data.frame(ls_ilisi)
   
   colns <- c('methods_use', 'iLISI_median', 'iLISI_median_norm')
-  median_iLISI <- normalize_values(iLISI_df, colns, min_val=min(iLISI_df), max_val=max(iLISI_df))
+  median_iLISI <- normalize_values(iLISI_df, colns, min_val=min(iLISI_df[,1]), max_val=max(iLISI_df[,1]))
   mini <- min(median_iLISI$iLISI_median_norm)
   maxi <- max(median_iLISI$iLISI_median_norm)
   median_iLISI$iLISI_median_norm2 <- (median_iLISI$iLISI_median_norm - mini) / (maxi - mini)
@@ -545,7 +544,13 @@ get_cells_integration_iLISI_d6 <- function(dataset_use, blabel='13', this_dir=''
   
 }
 
+#get_cells_integration_iLISI_v2 <- function(plx = 40, eval_metric = 'LISI_v2/'){
+#  lisi_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_batch_',plx,'.txt'), head=T, row.names = 1, check.names = FALSE)
+#  seurat3_df <- seurat3_df[meta_ls$cells_common,]
+#
+#}
 
+# this does only plotting
 get_cells_integration_iLISI_v2 <- function(dataset_use, meta_ls, this_dir='', plx = 40, eval_metric = 'LISI/'){
   
   seurat2_df <- read.table(paste0(eval_metric,"Seurat_2/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)

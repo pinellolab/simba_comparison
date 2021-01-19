@@ -11,8 +11,8 @@ if (length(args) != 3){
 }
 # source relevant functions
 #source("Batch-effect-removal-benchmarking/Script/evaluation/ARI/ARI_utils/run_ARISampled.R")
-source("batch_correction/Batch-effect-removal-benchmarking/Script/evaluation/ARI/ARI_utils/ari_calcul_sampled.R")
-source("batch_correction/Batch-effect-removal-benchmarking/Script/evaluation/ARI/ARI_utils/conclude_ARISampled.R")
+source("batch_correction/metrics/ari_calcul_sampled.R")
+#source("batch_correction/Batch-effect-removal-benchmarking/Script/evaluation/ARI/ARI_utils/conclude_ARISampled.R")
 
 ##############################
 ############ Set arguments
@@ -54,10 +54,10 @@ run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use){
   #temp<-ari_calcul_sampled(myData=thisData, cpcs=colPCA, isOptimal=TRUE,
   #                         method_use = method_use,
   #                         base_name=paste0(dataset_no, eval_metric, '_OP_'))
-  setwd(paste0(out_dir, '/', eval_metric, "_CT"))
+  setwd(out_dir)
   temp<-ari_calcul_sampled(myData=thisData, cpcs=colPCA, isOptimal=FALSE,
                            method_use = method_use,
-                           base_name=paste0(eval_metric, '_CT_'))
+                           base_name='')
   return(temp)
 }
 
