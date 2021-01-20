@@ -27,8 +27,6 @@ method_use = args[1]
 # send output to out_dir
 out_dir = args[3]
 
-# create relevant folder within the out_dir
-dir.create(paste0(out_dir, eval_metric, "_CT"),showWarnings = TRUE, recursive = TRUE)
 
 
 # Author : Nicole Lee
@@ -44,7 +42,7 @@ run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use){
   thisData <- read.table(pca_file)
 
   # Get relevant columns
-  colPCA <- grep('([Pp][Cc]_?)|(V)|(Harmony)|(W)',colnames(thisData))
+  colPCA <- grep('([Pp][Cc]_?)|(V)|(harmony.?)|(W)',colnames(thisData))
   colPCA <- colPCA[1:nPCs]
 
   colnames(thisData)[grep('[cC]ell_?[tT]ype',colnames(thisData))] <- 'celltype'
