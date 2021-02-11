@@ -33,7 +33,6 @@ liger_preprocess <- function(expr_mat, metadata, batch_label = "batchlb", var.th
  
   # Normalize the data to account for different numbers of UMIs per cell 
   ligerex = normalize(ligerex) 
-  str(ligerex) 
   
   # Select variable genes on each of the datasets separately, then takes the union
   ligerex = selectGenes(ligerex, var.thresh = var.thresh)

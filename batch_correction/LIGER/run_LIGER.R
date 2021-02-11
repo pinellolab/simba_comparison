@@ -46,10 +46,9 @@ celltype_label = "CellType"
 expr_mat <- read.table(file = gzfile(expr_filename),sep="\t",header=T,row.names=1,check.names = F)
 metadata <- read.table(file = gzfile(metadata_filename),sep="\t",header=T,row.names=1,check.names = F)
 
-colnames(metadata)[colnames(metadata) == 'ct'] <- 'CellType'
+colnames(metadata)[colnames(metadata) == 'ct' | colnames(metadata) == "celltype"] <- 'CellType'
 
 expr_mat <- expr_mat[, rownames(metadata)]
-str(expr_mat)
 
 ########################
 # run pipeline

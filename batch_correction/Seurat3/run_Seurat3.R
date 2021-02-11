@@ -51,7 +51,7 @@ celltype_label = "CellType"
 expr_mat <- read.table(file = gzfile(expr_filename),sep="\t",header=T,row.names=1,check.names = F)
 metadata <- read.table(file = gzfile(metadata_filename),sep="\t",header=T,row.names=1,check.names = F)
 
-colnames(metadata)[colnames(metadata) == 'ct'] <- 'CellType'
+colnames(metadata)[colnames(metadata) == 'ct' | colnames(metadata) == 'celltype'] <- 'CellType'
 
 expr_mat <- expr_mat[, rownames(metadata)]
 
@@ -68,6 +68,9 @@ batch_list = seurat3_preprocess(
                 norm_method = norm_method, scale_factor = scale_factor, 
                 numVG = numVG, nhvg = nhvg, 
                 batch_label = batch_label, celltype_label = celltype_label)
+
+dir.create("batch_correction/Raw")
+saveRDS(batch_list, "batch_correction/Raw/batch_list.RDS")
 
 batches = call_seurat3(batch_list, batch_label, celltype_label, npcs, plotout_dir = working_dir, saveout_dir = working_dir, outfilename_prefix = outfile_prefix, visualize = visualize, save_obj = save_obj)
 
