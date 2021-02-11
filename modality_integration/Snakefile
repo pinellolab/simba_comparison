@@ -39,28 +39,6 @@ rule LIGER_bedmap:
     shell:
         "bedmap --ec --delim '\t' --echo --echo-map-id {input} > {output}"
 
-# deprecated
-rule evaluate_ASW:
-    input:
-        "{software}/{dataset}/integrated_embedding.txt"
-    output:
-        "{software}/{dataset}/metric_ASW.txt"
-    params:
-        output_dir="{software}/{dataset}/",
-    shell:
-        "python metrics/run_ASW.py {wildcards.software} {input} {params.output_dir} 20"
-
-
-rule evaluate_metrics:
-    input:
-        "{software}/{dataset}/integrated_embedding.txt"
-    output:
-        "{software}/{dataset}/summary_metrics.txt"
-    params:
-        output_dir="{software}/{dataset}/"
-    threads: 1
-    shell:
-        "Rscript metrics/get_metrics.R {input} 20 {params.output_dir} {threads}"
 
 rule evaluate_metric_each:
     input:
@@ -88,15 +66,6 @@ rule collect_metrics_each:
 
 SOFTWARES=["Raw", "Seurat3", "LIGER", "SIMBA"]
 DATASETS=["pbmc", "mouse-skin"]
-rule collect_metrics:
-    input:
-        expand("{software}/{dataset}/summary_metrics.txt", software=SOFTWARES, dataset = DATASETS)
-    output:
-        "metrics/summary_metrics.txt"
-    params:
-        output_dir="metrics/"
-    shell:
-        "Rscript metrics/collect_metrics.R {input} {params.output_dir}"
 
 
 rule collect_metrics_dataset:
