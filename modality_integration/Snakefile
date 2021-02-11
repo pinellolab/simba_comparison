@@ -1,0 +1,123 @@
+ruleorder: LIGER_sort_annots > make_promoter_annot
+
+rule LIGER_sort_fragments:
+    input:
+        "data/{dataset}/atac_fragments.bed.gz"
+    output:
+        "data/{dataset}/atac_fragments.sort.bed"
+    threads: 20
+    shell:
+        "gunzip -c {input} > data/{wildcards.dataset}/atac_fragments.bed; sort -k1,1 -k2,2n -k3,3n --parallel={threads} data/{wildcards.dataset}/atac_fragments.bed > {output} ; rm data/{wildcards.dataset}/atac_fragments.bed"
+
+rule make_promoter_annot:
+    input:
+        "LIGER/annots/{genome}/{genome}_genes.bed"
+    output:
+        "LIGER/annots/{genome}/{genome}_promoters-{upstream_length}.bed"
+    shell:
+        "Rscript LIGER/make_promoter_annot.R {input} {wildcards.upstream_length} {output}"
+
+rule LIGER_sort_annots:
+    input:
+        "LIGER/annots/{genome}/{genome}_{element}.bed"
+    output:
+        "LIGER/annots/{genome}/{genome}_{element}.sort.bed"
+    shell:
+        "sort -k 1,1 -k2,2n -k3,3n {input} > {output}"
+
+def genomic_element_annot(wildcards):
+    dataset_to_genome_dict = { 'pbmc' : 'hg19', 'mouse-skin' : 'mm10'}
+    genome = dataset_to_genome_dict[wildcards.dataset]
+    return "LIGER/annots/" + genome + "/" + genome + "_{element}.sort.bed"
+
+rule LIGER_bedmap:
+    input:
+        genomic_element_annot,
+        "data/{dataset}/atac_fragments.sort.bed"
+    output:
+        "data/{dataset}/atac_{element}_bc.bed"
+    shell:
+        "bedmap --ec --delim '\t' --echo --echo-map-id {input} > {output}"
+
+# deprecated
+rule evaluate_ASW:
+    input:
+        "{software}/{dataset}/integrated_embedding.txt"
+    output:
+        "{software}/{dataset}/metric_ASW.txt"
+    params:
+        output_dir="{software}/{dataset}/",
+    shell:
+        "python metrics/run_ASW.py {wildcards.software} {input} {params.output_dir} 20"
+
+
+rule evaluate_metrics:
+    input:
+        "{software}/{dataset}/integrated_embedding.txt"
+    output:
+        "{software}/{dataset}/summary_metrics.txt"
+    params:
+        output_dir="{software}/{dataset}/"
+    threads: 1
+    shell:
+        "Rscript metrics/get_metrics.R {input} 20 {params.output_dir} {threads}"
+
+rule evaluate_metric_each:
+    input:
+        "{software}/{dataset}/integrated_embedding.txt"
+    output:
+        "{software}/{dataset}/metric_{metric}.txt"
+    params:
+        output_dir="{software}/{dataset}/"
+    threads: 1
+    shell:
+        "Rscript metrics/get_metric_each.R {wildcards.metric} {input} 20 {params.output_dir} {threads}"
+    
+
+METRICS=["Silhouette", "Anchoring_dist_rank", "Anchoring_dist", "Graph_connectivity", "Celltype_agreement"]
+rule collect_metrics_each:
+    input:
+        expand("{{software}}/{{dataset}}/metric_{metric}.txt", metric=METRICS)
+    output:
+        "{software}/{dataset}/metrics_collected.txt"
+    params:
+        output_dir="{software}/{dataset}/"
+    shell:
+        "Rscript metrics/collect_metrics_each.R {input} {params.output_dir}"
+
+
+SOFTWARES=["Raw", "Seurat3", "LIGER", "SIMBA"]
+DATASETS=["pbmc", "mouse-skin"]
+rule collect_metrics:
+    input:
+        expand("{software}/{dataset}/summary_metrics.txt", software=SOFTWARES, dataset = DATASETS)
+    output:
+        "metrics/summary_metrics.txt"
+    params:
+        output_dir="metrics/"
+    shell:
+        "Rscript metrics/collect_metrics.R {input} {params.output_dir}"
+
+
+rule collect_metrics_dataset:
+    input:
+        expand("{software}/{{dataset}}/metrics_collected.txt", software=SOFTWARES)
+    output:
+        "metrics/metrics_collected_{dataset}.txt"
+    params:
+        output_dir="metrics/"
+    shell:
+        "Rscript metrics/collect_metrics_dataset.R {wildcards.dataset} {input} {params.output_dir}"
+
+
+rule collect_metrics_all:
+    input:
+        expand("{software}/{dataset}/metrics_collected.txt", software=SOFTWARES, dataset = DATASETS)
+    output:
+        "metrics/metrics_collected_each.txt"
+    params:
+        output_dir="metrics/"
+    shell:
+        "Rscript metrics/collect_metrics.R {input} {params.output_dir}"
+
+
