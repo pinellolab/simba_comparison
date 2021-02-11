@@ -132,7 +132,8 @@ ari_calcul_sampled <- function(myData, cpcs, isOptimal=FALSE,
                       "ari_celltype"=total_ari_celltype)
   
   # write final dataframe to a text file
-  write.table(myARI, file = paste0(base_name,method_use,"_ARI.txt"), row.names = FALSE, col.names = TRUE, quote = FALSE, sep="\t")
+  nPCs = length(cpcs)
+  write.table(myARI, file = paste0(base_name,method_use,"_ARI_PC", nPCs, ".txt"), row.names = FALSE, col.names = TRUE, quote = FALSE, sep="\t")
   
   print('Save output in folder')
   print(base_name)

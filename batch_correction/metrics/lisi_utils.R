@@ -1,10 +1,14 @@
-normalize_values <- function(myData, method_use, colns, min_val=1, max_val=2){
+normalize_values <- function(myData, colns, min_val=1, max_val=2){
   med_val <- c()
   med_val_norm <- c()
-  mi <- median(myData[,1])
-  med_val <- c(med_val, mi)
-  med_val_norm <- c(med_val_norm, (mi - min_val) / (max_val - min_val))
-  myDataNorm <- data.frame('X1'=method_use, 'X2'=med_val, 'X3'=med_val_norm)
+  methods_use <- c()
+  for(cn in colnames(myData)){
+      methods_use <- c(methods_use, cn)
+      mi <- median(myData[,cn])
+      med_val <- c(med_val, mi)
+      med_val_norm <- c(med_val_norm, (mi - min_val) / (max_val - min_val))
+  }
+  myDataNorm <- data.frame('X1'=methods_use, 'X2'=med_val, 'X3'=med_val_norm)
   colnames(myDataNorm) <- colns
   return(myDataNorm)
 }
@@ -48,12 +52,12 @@ get_celltype_common <- function(data_path){
 }
 
 
-run_LISI_final <- function(fn, data_path, save_dir, eval_metric, methods_use, plx=40){
+run_LISI_final <- function(fn, data_path, save_dir, eval_metric, methods_use, plx=40, nPCs = 20){
   
   # myPCA <- read.csv(paste0(data_path, fn), head=T, row.names = 1, check.names = FALSE)
-  myPCA <- read.table(data_path, head = T, row.names = 1, check.names = FALSE)
-  cpcs <- grep('([Pp][Cc]_?)|(V)|(Harmony)|(W)',colnames(myPCA))
-  cpcs <- cpcs[1:20]
+  myPCA <- read.table(data_path, head = T, row.names = 1, check.names = FALSE, sep = "\t")
+  cpcs <- grep('([Pp][Cc]_?)|(V)|(harmony.?)|(W)',colnames(myPCA))
+  cpcs <- cpcs[1:nPCs]
   lisi_embeddings <- myPCA[,cpcs]
   
   colnames(myPCA)[grep('[cC]ell_?[tT]ype',colnames(myPCA))] <- 'cell_type'
@@ -63,7 +67,7 @@ run_LISI_final <- function(fn, data_path, save_dir, eval_metric, methods_use, pl
   
   lisi_label = c('batch', 'cell_type')
   
-  lisi_res <- lisi::compute_lisi(lisi_embeddings, lisi_meta_data, lisi_label,perplexity = plx)
+  lisi_res <- lisi::compute_lisi(lisi_embeddings, lisi_meta_data, lisi_label, perplexity = plx)
   lisi_res$cell <- rownames(lisi_embeddings)
   
   lisi_batch <- subset(lisi_res,select=c('batch','cell'))
@@ -134,22 +138,23 @@ summary_LISI_d9 <- function(this_dir, plottitle='LISI - dataset', plx=40, eval_m
 }
 
 
-summary_LISI <- function(save_dir, methods_use, plottitle='LISI - dataset', plx=40, eval_metric='LISI',ht=400, wd=400){
+summary_LISI <- function(save_dir, methods_use, plottitle='LISI - dataset', plx=40, eval_metric='LISI',ht=400, wd=400, nPCs){
+  iLISI_df <- read.csv(paste0(save_dir,"/iLISI_summary.csv"), head=T, check.names = F)
   #iLISI_df <- read.csv(paste0(this_dir, eval_metric,"result/",plx,"/iLISI_summary.csv"), head=T, check.names = F)
-  iLISI_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_batch_',plx,'.txt'), head=T, check.names = F, row.names = 1)
+  #iLISI_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_batch_',plx,'.txt'), head=T, check.names = F, row.names = 1)
   colns <- c('methods_use', 'iLISI_median', 'iLISI_median_norm')
-  # median_iLISI <- normalize_values(iLISI_df, colns, min_val=1, max_val=length(meta_ls$batches))
-  median_iLISI <- normalize_values(iLISI_df, methods_use, colns, min_val=min(iLISI_df[,1]), max_val=max(iLISI_df[,1]))
+  #median_iLISI <- normalize_values(iLISI_df, colns, min_val=1, max_val=length(meta_ls$batches))
+  median_iLISI <- normalize_values(iLISI_df, colns, min_val=min(iLISI_df), max_val=max(iLISI_df))
   mini <- min(median_iLISI$iLISI_median_norm)
   maxi <- max(median_iLISI$iLISI_median_norm)
   median_iLISI$iLISI_median_norm2 <- (median_iLISI$iLISI_median_norm - mini) / (maxi - mini)
   
   
-  #cLISI_df <- read.csv(paste0(this_dir,eval_metric,"result/",plx,"/cLISI_summary.csv"), head=T, check.names = F)
-  cLISI_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_celltype_',plx,'.txt'), head=T, check.names = F, row.names = 1)
+  cLISI_df <- read.csv(paste0(save_dir,"/cLISI_summary.csv"), head=T, check.names = F)
+  #cLISI_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_celltype_',plx,'.txt'), head=T, check.names = F, row.names = 1)
   colns <- c('methods_use', 'cLISI_median', 'cLISI_median_norm')
-  # median_cLISI <- normalize_values(cLISI_df, colns, min_val=1, max_val=length(meta_ls$celltypels))
-  median_cLISI <- normalize_values(cLISI_df, methods_use, colns, min_val=min(cLISI_df[,1]), max_val=max(cLISI_df[,1]))
+  #median_cLISI <- normalize_values(cLISI_df, colns, min_val=1, max_val=length(meta_ls$celltypels))
+  median_cLISI <- normalize_values(cLISI_df, colns, min_val=min(cLISI_df), max_val=max(cLISI_df))
   median_cLISI$cLISI_median_norm_sub <- 1 - median_cLISI$cLISI_median_norm
   minc <- min(median_cLISI$cLISI_median_norm_sub)
   maxc <- max(median_cLISI$cLISI_median_norm_sub)
@@ -163,7 +168,7 @@ summary_LISI <- function(save_dir, methods_use, plottitle='LISI - dataset', plx=
   
   # write.table(final_df,paste0(this_dir, eval_metric, "result/", plx, '/', 'summary_median_', plx, '.txt'), 
   #             quote=F, sep='\t', row.names=T, col.names=T)
-  write.table(final_df, file = paste0(save_dir, methods_use, '_', eval_metric, "_", plx, '.txt'), 
+  write.table(final_df, file = paste0(save_dir,  eval_metric, "_", plx, "_PC", nPCs, '.txt'), 
               quote=F, row.names=F)
   
   
@@ -171,6 +176,16 @@ summary_LISI <- function(save_dir, methods_use, plottitle='LISI - dataset', plx=
   #plot_final_LISI(final_df, plottitle, this_dir, plx, ht, wd, eval_metric, 
   #                xstring = 'cLISI_median_norm_sub', ystring = 'iLISI_median_norm', plottype = 'methods_use')
   
+}
+
+median_LISI <- function(save_dir, methods_use, plottitle='LISI - dataset', plx=40, eval_metric='LISI',ht=400, wd=400, nPCs){
+    iLISI_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_batch_',plx,'.txt'), head=T, check.names = F, row.names = 1)
+    median_iLISI = median(iLISI_df[,1])
+    cLISI_df <- read.table(paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_celltype_',plx,'.txt'), head=T, check.names = F, row.names = 1)
+    median_cLISI = median(cLISI_df[,1])
+    final_df = data.frame(methods_use = methods_use, median_iLISI = median_iLISI, median_cLISI = median_cLISI)
+    write.table(final_df, file = paste0(save_dir, methods_use, '_', eval_metric, "_", plx, "_PC", nPCs, '.txt'), quote = F, row.names = F)
+
 }
 
 #' Boxplot of LISI index
@@ -184,7 +199,7 @@ summary_LISI <- function(save_dir, methods_use, plottitle='LISI - dataset', plx=
 #' @examples
 LISI_boxplot_fun <- function(data,vect_names_method, base_name, title='iLISI', toptitle='Batch Mixing', save_results=F){
   
-  library(ggpubr)
+  library(ggplot2)
   
   # combine the LISI index from all the method in one dataset
   if(length(data)>1){
@@ -240,9 +255,9 @@ LISI_boxplot_fun <- function(data,vect_names_method, base_name, title='iLISI', t
   # axis.line.y=element_blank(), axis.ticks.y=element_blank()
   
   # save
-  library(ezTools)
-  ezTools::save_image(p, paste0(base_name, "boxplot_",title,".png"))
-  print('Boxplot is saved')
+  #library(ezTools)
+  #ezTools::save_image(p, paste0(base_name, "boxplot_",title,".png"))
+  #print('Boxplot is saved')
   return(p)
 }
 
@@ -507,26 +522,29 @@ summary_LISI_d6 <- function(dataset_use, this_dir='', plx = 40, eval_metric = 'L
 }
 get_cells_integration_iLISI_d6 <- function(dataset_use, blabel='13', this_dir='', plx = 40, eval_metric = 'LISI/'){
   
-  seurat2_df <- read.table(paste0(eval_metric,"Seurat_2/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
-  seurat3_df <- read.table(paste0(eval_metric,"Seurat_3/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
-  harmony_df <- read.table(paste0(eval_metric,"Harmony/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
-  fastMNN_df <- read.table(paste0(eval_metric,"fastMNN/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
-  resnet_df <- read.table(paste0(eval_metric,"MMD-ResNet/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
-  scanorama_df <- read.table(paste0(eval_metric,"Scanorama/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
-  scGen_df <- read.table(paste0(eval_metric,"scGen/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  raw_df <- read.table(paste0(eval_metric,"Raw/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  correctMNN_df <- read.table(paste0(eval_metric,"MNN_Correct/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  combat_df <- read.table(paste0(eval_metric,"ComBat/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  liger_df <- read.table(paste0(eval_metric,"LIGER/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  limma_df <- read.table(paste0(eval_metric,"limma/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  scMerge_df <- read.table(paste0(eval_metric,"scMerge/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  zinbwave_df <- read.table(paste0(eval_metric,"ZINB-WaVE/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
+  #seurat2_df <- read.table(paste0(eval_metric,"Seurat_2/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
+    #'lisi_tmpdir/', methods_use, '_', eval_metric, '_batch_',plx,'.txt'
+  seurat3_df <- read.table(paste0("batch_correction/metrics/", dataset_use, "/lisi_tmpdir/", "Seurat3", "_", eval_metric, '_batch_',plx,".txt"), head=T, row.names = 1, check.names = FALSE)
+  harmony_df <- read.tablle(paste0("batch_correction/metrics/", dataset_use, "/lisi_tmpdir/", "Harmony", "_", eval_metric, '_batch_',plx,".txt"), head=T, row.names = 1, check.names = FALSE)
+  #fastMNN_df <- read.table(paste0(eval_metric,"fastMNN/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
+  #resnet_df <- read.table(paste0(eval_metric,"MMD-ResNet/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
+  #scanorama_df <- read.table(paste0(eval_metric,"Scanorama/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)
+  #scGen_df <- read.table(paste0(eval_metric,"scGen/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)  
+  raw_nopp_df <- read.table(paste0("batch_correction/metrics/", dataset_use, "/lisi_tmpdir/", "Raw_nopp", "_", eval_metric, '_batch_',plx,".txt"), head=T, row.names = 1, check.names = FALSE)  
+  raw_df <- read.table(paste0("batch_correction/metrics/", dataset_use, "/lisi_tmpdir/", "Raw_PCA", "_", eval_metric, '_batch_',plx,".txt"), head=T, row.names = 1, check.names = FALSE)  
+  #correctMNN_df <- read.table(paste0(eval_metric,"MNN_Correct/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE)  
+  #combat_df <- read.table(paste0(eval_metric,"ComBat/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
+  liger_df <- read.table(paste0("batch_correction/metrics/", dataset_use, "/lisi_tmpdir/", "Raw_PCA", "_", eval_metric, '_batch_',plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
+  #limma_df <- read.table(paste0(eval_metric,"limma/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
+  #scMerge_df <- read.table(paste0(eval_metric,"scMerge/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
+  #zinbwave_df <- read.table(paste0(eval_metric,"ZINB-WaVE/lisi_batch","_",plx,'_',blabel,".txt"), head=T, row.names = 1, check.names = FALSE) 
   
   
-  dir.create(paste0(this_dir, eval_metric,"result/"), showWarnings = F)
-  dir.create(paste0(this_dir, eval_metric,"result/",plx,"/"), showWarnings = F)
-  methods_use <- c('Raw','Seurat_2','Seurat_3','Harmony','fastMNN','MNN_Correct','ComBat',
-                   'limma','scGen','Scanorama','MMD-ResNet','ZINB-WaVE','scMerge','LIGER')
+  #dir.create(paste0(this_dir, eval_metric,"result/"), showWarnings = F)
+  #dir.create(paste0(this_dir, eval_metric,"result/",plx,"/"), showWarnings = F)
+  #methods_use <- c('Raw','Seurat_2','Seurat_3','Harmony','fastMNN','MNN_Correct','ComBat',
+  #                 'limma','scGen','Scanorama','MMD-ResNet','ZINB-WaVE','scMerge','LIGER')
+  methods_use = c("Raw_nopp", "Raw_PCA", "Seurat3", "Harmony", "LIGER", "SIMBA")
   piLISI <- LISI_boxplot_fun(data = list(raw_df, seurat2_df, seurat3_df,
                                          harmony_df, fastMNN_df, correctMNN_df,
                                          combat_df, limma_df, scGen_df, 
@@ -551,97 +569,30 @@ get_cells_integration_iLISI_d6 <- function(dataset_use, blabel='13', this_dir=''
 #}
 
 # this does only plotting
-get_cells_integration_iLISI_v2 <- function(dataset_use, meta_ls, this_dir='', plx = 40, eval_metric = 'LISI/'){
-  
-  seurat2_df <- read.table(paste0(eval_metric,"Seurat_2/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  seurat3_df <- read.table(paste0(eval_metric,"Seurat_3/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  harmony_df <- read.table(paste0(eval_metric,"Harmony/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  fastMNN_df <- read.table(paste0(eval_metric,"fastMNN/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  resnet_df <- read.table(paste0(eval_metric,"MMD-ResNet/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  scanorama_df <- read.table(paste0(eval_metric,"Scanorama/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  scGen_df <- read.table(paste0(eval_metric,"scGen/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  raw_df <- read.table(paste0(eval_metric,"Raw/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  correctMNN_df <- read.table(paste0(eval_metric,"MNN_Correct/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  combat_df <- read.table(paste0(eval_metric,"ComBat/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  liger_df <- read.table(paste0(eval_metric,"LIGER/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  limma_df <- read.table(paste0(eval_metric,"limma/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  scMerge_df <- read.table(paste0(eval_metric,"scMerge/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  zinbwave_df <- read.table(paste0(eval_metric,"ZINB-WaVE/lisi_batch","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
+get_cells_integration_iLISI_v2 <- function(dataset_use, methods_use, meta_ls, output_dir='', plx = 40, eval_metric = 'LISI/'){
+  dfs.l = lapply(methods_use, function(method_use) read.table(paste0("batch_correction/metrics/", dataset_use, "/lisi_tmpdir/", method_use, "_", eval_metric, '_batch_',plx,".txt"), head=T, row.names = 1, check.names = FALSE))
   
   
-  raw_df <- raw_df[meta_ls$cells_common,]
-  seurat2_df <- seurat2_df[meta_ls$cells_common,]
-  seurat3_df <- seurat3_df[meta_ls$cells_common,]
-  harmony_df <- harmony_df[meta_ls$cells_common,]
-  fastMNN_df <- fastMNN_df[meta_ls$cells_common,]
-  correctMNN_df <- correctMNN_df[meta_ls$cells_common,]
-  limma_df <- limma_df[meta_ls$cells_common,]
-  combat_df <- combat_df[meta_ls$cells_common,]
-  scGen_df <- scGen_df[meta_ls$cells_common,]
-  scanorama_df <- scanorama_df[meta_ls$cells_common,]
-  resnet_df <- resnet_df[meta_ls$cells_common,]
-  zinbwave_df <- zinbwave_df[meta_ls$cells_common,]
-  scMerge_df <- scMerge_df[meta_ls$cells_common,]
-  liger_df <- liger_df[meta_ls$cells_common,]
-  
-  dir.create(paste0(this_dir, eval_metric,"result/"), showWarnings = F)
-  dir.create(paste0(this_dir, eval_metric,"result/",plx,"/"), showWarnings = F)
-  methods_use <- c('Raw','Seurat_2','Seurat_3','Harmony','fastMNN','MNN_Correct','ComBat',
-                   'limma','scGen','Scanorama','MMD-ResNet','ZINB-WaVE','scMerge','LIGER')
-  piLISI <- LISI_boxplot_fun(data = list(raw_df, seurat2_df, seurat3_df,
-                                         harmony_df, fastMNN_df, correctMNN_df,
-                                         combat_df, limma_df, scGen_df,                    
-                                         scanorama_df, resnet_df, 
-                                         zinbwave_df, scMerge_df, liger_df),
+  #dfs_common.l = lapply(dfs.l, function(df) df[meta_ls$cells_common,])
+
+  piLISI <- LISI_boxplot_fun(data = dfs.l,
                              vect_names_method = methods_use, 
-                             title='iLISI', toptitle=paste0('iLISI Batch Mixing plx ',plx),
-                             base_name=paste0(this_dir, eval_metric, "result/",plx,"/"), save_results=T)
+                             title='iLISI', toptitle=paste0('iLISI Batch Mixing plx ',plx), base_name = output_dir, save_results = T)
   
   piLISI
-  
-  
-  save(piLISI, file = paste0(this_dir, eval_metric,"result/",plx, "/piLISI_",dataset_use,"_plots_plx_",plx,".rda"))
-  
-  
+  #save(piLISI, file = paste0(output_dir, eval_metric,"result/",plx, "/piLISI_",dataset_use,"_plots_plx_",plx,".rda"))
 }
 
 
 
-get_celltype_mixing_cLISI <- function(dataset_use, this_dir='', plx = 40, eval_metric = 'LISI/'){
+get_celltype_mixing_cLISI <- function(dataset_use, methods_use, output_dir='', plx = 40, eval_metric = 'LISI/'){
+  dfs.l = lapply(methods_use, function(method_use) read.table(paste0("batch_correction/metrics/", dataset_use, "/lisi_tmpdir/", method_use, "_", eval_metric, '_celltype_',plx,".txt"), head=T, row.names = 1, check.names = FALSE))
+   
   
-  seurat2_df <- read.table(paste0(eval_metric,"Seurat_2/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  seurat3_df <- read.table(paste0(eval_metric,"Seurat_3/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  harmony_df <- read.table(paste0(eval_metric,"Harmony/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  fastMNN_df <- read.table(paste0(eval_metric,"fastMNN/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  resnet_df <- read.table(paste0(eval_metric,"MMD-ResNet/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  scanorama_df <- read.table(paste0(eval_metric,"Scanorama/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)
-  scGen_df <- read.table(paste0(eval_metric,"scGen/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  raw_df <- read.table(paste0(eval_metric,"Raw/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  correctMNN_df <- read.table(paste0(eval_metric,"MNN_Correct/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE)  
-  combat_df <- read.table(paste0(eval_metric,"ComBat/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  
-  liger_df <- read.table(paste0(eval_metric,"LIGER/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  limma_df <- read.table(paste0(eval_metric,"limma/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  scMerge_df <- read.table(paste0(eval_metric,"scMerge/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  zinbwave_df <- read.table(paste0(eval_metric,"ZINB-WaVE/lisi_celltype","_",plx,".txt"), head=T, row.names = 1, check.names = FALSE) 
-  
-  dir.create(paste0(this_dir, eval_metric,"result/"), showWarnings = F)
-  dir.create(paste0(this_dir, eval_metric,"result/",plx,"/"), showWarnings = F)
-  methods_use <- c('Raw','Seurat_2','Seurat_3','Harmony','fastMNN','MNN_Correct','ComBat',
-                   'limma','scGen','Scanorama','MMD-ResNet','ZINB-WaVE','scMerge','LIGER')
-  
-  pcLISI <- LISI_boxplot_fun(data = list(raw_df, seurat2_df, seurat3_df,
-                                         harmony_df, fastMNN_df, correctMNN_df,
-                                         combat_df, limma_df, scGen_df,                    
-                                         scanorama_df, resnet_df, 
-                                         zinbwave_df, scMerge_df, liger_df),
+  pcLISI <- LISI_boxplot_fun(data = dfs.l, 
                              vect_names_method = methods_use, 
-                             title='cLISI', toptitle=paste0('cLISI Cell Type Mixing plx ',plx),
-                             base_name=paste0(this_dir, eval_metric, "result/",plx,"/"), save_results=T)
-  
+                             title='cLISI', toptitle=paste0('cLISI Cell Type Mixing plx ',plx), base_name = output_dir, save_results = T)
   pcLISI
-  
-  save(pcLISI, file = paste0(this_dir, eval_metric, "result/",plx, "/pcLISI_",dataset_use,"_plots_",plx,".rda"))
 }
   
 

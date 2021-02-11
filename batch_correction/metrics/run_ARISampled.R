@@ -6,8 +6,8 @@
 rm(list=ls())
 
 args = commandArgs(trailingOnly = TRUE)
-if (length(args) != 3){
-    stop("Usage: Rscript run_ARISampled.R software pca_filename out_dir")
+if (length(args) != 4){
+    stop("Usage: Rscript run_ARISampled.R software pca_filename out_dir nPCs")
 }
 # source relevant functions
 #source("Batch-effect-removal-benchmarking/Script/evaluation/ARI/ARI_utils/run_ARISampled.R")
@@ -18,7 +18,6 @@ source("batch_correction/metrics/ari_calcul_sampled.R")
 ############ Set arguments
 
 eval_metric <- 'ARISampled'
-nPCs = 20
 
 # read in files from this_dir
 pca_filename = args[2]
@@ -26,6 +25,7 @@ method_use = args[1]
 
 # send output to out_dir
 out_dir = args[3]
+nPCs = as.integer(args[4])
 
 
 
@@ -39,12 +39,12 @@ out_dir = args[3]
 
 run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use){
 
-  thisData <- read.table(pca_file)
+  thisData <- read.table(pca_file, sep = "\t", head = T, row.names = 1)
 
   # Get relevant columns
-  colPCA <- grep('([Pp][Cc]_?)|(V)|(harmony.?)|(W)',colnames(thisData))
+  colPCA <- grep('([Pp][Cc]_?)|(V)|(harmony.?)|(W)|(D)',colnames(thisData))
   colPCA <- colPCA[1:nPCs]
-
+  str(thisData)
   colnames(thisData)[grep('[cC]ell_?[tT]ype',colnames(thisData))] <- 'celltype'
   colnames(thisData)[grep('([bB]atch)|(BATCH)|(batchlb)',colnames(thisData))] <- 'batch'
 
@@ -53,6 +53,7 @@ run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use){
   #                         method_use = method_use,
   #                         base_name=paste0(dataset_no, eval_metric, '_OP_'))
   setwd(out_dir)
+  print(colnames(thisData))
   temp<-ari_calcul_sampled(myData=thisData, cpcs=colPCA, isOptimal=FALSE,
                            method_use = method_use,
                            base_name='')

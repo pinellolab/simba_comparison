@@ -8,35 +8,25 @@ args = commandArgs(trailingOnly = TRUE)
 
 source('batch_correction/metrics/lisi_utils.R')
 
-pca_files = args[1:(length(args)-2)]
-output_dir = args[length(args)-1]
-nPCs = as.integer(args[length(args)])
+method_use = args[1]
+pca_file = args[2]
+output_dir = args[3]
+nPCs = as.integer(args[4])
 
 #this_dir <- '/home/hoa/hoatran/demo_normalization/manuscript_results/dataset2_cellatlas/'
 #setwd(this_dir)
 eval_metric <- 'LISI' 
-tmp = strsplit(output_dir, split= "/")[[1]]
-dataset_use <- tmp[length(tmp)]
+#dataset_use <- 
 plx = 40
 
 # Get output of LISI
 #data_dir = paste0('/acrc/jinmiao/CJM_lab/hoatran/demo_normalization/xiaomeng/generate_PCA_tSNE_UMAP/',dataset_use,'/')
 
-#methods_use = c("Raw_nopp", "Raw_PCA", "Seurat3", "Harmony", "LIGER", "SIMBA")
-methods_use = sapply(strsplit(pca_files, split="/"), function(vec) vec[2])
-message(paste0("Calculating LISI for ", paste0(methods_use, collapse = ", ")))
-
-fn_ls <- pca_files
-
-stopifnot(length(methods_use) == length(fn_ls))
-
 #print(fn_ls)
 #dir.create(paste0(this_dir, eval_metric), showWarnings = F)
 
-for (i in rep(1:length(methods_use), 1)){
-    print(methods_use[i])
-    run_LISI_final('', pca_files[i], output_dir, eval_metric, methods_use[i], plx, nPCs = nPCs)
-}
+
+run_LISI_final('', pca_file, output_dir, eval_metric, method_use, plx, nPCs = nPCs)
 
 #####################################
 # iLISI batch
@@ -48,10 +38,11 @@ for (i in rep(1:length(methods_use), 1)){
 # resnet_df$cell <- gsub('-[0-9]$','',resnet_df$cell)
 # rownames(resnet_df) <- resnet_df$cell
 
-pca_file = paste0("batch_correction/Raw_PCA/output/", dataset_use,'_Raw_PCA_pca.txt')
-meta_ls <- get_celltype_common(pca_file)
-length(meta_ls$cells_common)
-get_cells_integration_iLISI_v2(dataset_use, methods_use, meta_ls, output_dir, plx, eval_metric)
+
+#meta_ls <- get_celltype_common(pca_file)
+#length(meta_ls$cells_common)
+
+#get_cells_integration_iLISI_v2(dataset_use, meta_ls, this_dir, plx, eval_metric)
 
 
 
@@ -59,7 +50,7 @@ get_cells_integration_iLISI_v2(dataset_use, methods_use, meta_ls, output_dir, pl
 ######### cLISI
 # #######################################
 
-get_celltype_mixing_cLISI(dataset_use, methods_use, output_dir, plx, eval_metric)
+#get_celltype_mixing_cLISI(dataset_use, this_dir, plx, eval_metric)
 
 ############################
 ## Summary output
@@ -67,7 +58,7 @@ get_celltype_mixing_cLISI(dataset_use, methods_use, output_dir, plx, eval_metric
 
 
 #median_LISI(output_dir, methods_use = method_use, plx = plx, eval_metric = eval_metric, nPCs = nPCs)
-summary_LISI(output_dir, methods_use = methods_use, plx = plx, eval_metric = eval_metric, nPCs = nPCs)
+summary_LISI(output_dir, methods_use = method_use, plx = plx, eval_metric = eval_metric, nPCs = nPCs)
 
 # fn <- 'dataset2_raw_pca.csv'
 # meta_ls <- get_celltype_common(data_dir, fn)

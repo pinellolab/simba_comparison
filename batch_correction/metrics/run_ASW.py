@@ -14,10 +14,9 @@ from sklearn.metrics import silhouette_score
 # asw_batch_norm_sub = 1 - asw_batch_norm
 def silhouette_coeff_ASW(adata, method_use='raw',save_dir='', save_fn='', percent_extract=0.8):
     random.seed(0)
-    asw_fscore = []
-    asw_bn = []
-    asw_bn_sub = []
-    asw_ctn = [] 
+    asw_b = []
+    asw_b_sub = []
+    asw_ct = [] 
     iters = []
     for i in range(20):
         iters.append('iteration_'+str(i+1))
@@ -26,25 +25,22 @@ def silhouette_coeff_ASW(adata, method_use='raw',save_dir='', save_fn='', percen
         adata_ext = adata[rand_cidx,:]
         asw_batch = silhouette_score(adata_ext.X, adata_ext.obs['batch'])
         asw_celltype = silhouette_score(adata_ext.X, adata_ext.obs['cell_type'])
-        min_val = -1
-        max_val = 1
-        asw_batch_norm = (asw_batch - min_val) / (max_val - min_val)
-        asw_celltype_norm = (asw_celltype - min_val) / (max_val - min_val)
         
-        fscoreASW = (2 * (1 - asw_batch_norm)*(asw_celltype_norm))/(1 - asw_batch_norm + asw_celltype_norm)
-        asw_fscore.append(fscoreASW)
-        asw_bn.append(asw_batch_norm)
-        asw_bn_sub.append(1-asw_batch_norm)
-        asw_ctn.append(asw_celltype_norm)
+        asw_b.append(asw_batch)
+        asw_b_sub.append(1-asw_batch)
+        asw_ct.append(asw_celltype)
     
 #     iters.append('median_value')
 #     asw_fscore.append(np.round(np.median(fscoreASW),3))
 #     asw_bn.append(np.round(np.median(asw_batch_norm),3))
 #     asw_bn_sub.append(np.round(1 - np.median(asw_batch_norm),3))
 #     asw_ctn.append(np.round(np.median(asw_celltype_norm),3))
-    df = pd.DataFrame({'asw_batch_norm':asw_bn, 'asw_batch_norm_sub': asw_bn_sub,
-                       'asw_celltype_norm': asw_ctn, 'fscore':asw_fscore,
-                       'method_use':np.repeat(method_use, len(asw_fscore))})
+    df = pd.DataFrame({'asw_batch':asw_b, 'asw_batch_sub': asw_b_sub,
+                       'asw_celltype': asw_ct,
+                       'method_use':np.repeat(method_use, len(asw_ct))})
+    df = df.append(df.median(axis = 0), ignore_index=True)
+    df.loc[max(df.index), "method_use"] = "median"
+
     df.to_csv(save_dir + save_fn + '.txt', sep = "\t")
     print('Save output of pca in: ',save_dir)
     print(df.values.shape)
@@ -58,7 +54,7 @@ def createAnnData(myDatafn):
     ib = np.isin(myData.keys(), bex)
     cex = ['celltype','CellType','cell_type','Cell_Type','ct']
     ict = np.isin(myData.keys(), cex)
-    adata = sc.AnnData(myData.values[:,0:20])
+    adata = sc.AnnData(myData.values[:,0:nPCs])
     adata.obs_names = myData.index
     adata.obs['batch'] = myData.values[:, np.where(ib)[0][0]]  # factor function in R
     adata.obs['cell_type'] = myData.values[:, np.where(ict)[0][0]]
@@ -71,6 +67,7 @@ sc.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hint
 method_use = sys.argv[1]
 pca_file = sys.argv[2]
 save_dir = sys.argv[3]
+nPCs = int(sys.argv[4])
 print("Saving to ", save_dir)
 
 #if not os.path.exists(save_dir+'/ASW/'): os.makedirs(os.path.join(save_dir,'/ASW/')) 
@@ -82,7 +79,7 @@ print("Saving to ", save_dir)
 def main(f = pca_file):
     #final_ls = []
     print('Extract asw for ', method_use)
-    save_fn = method_use + '_ASW'
+    save_fn = method_use + '_ASW_PC' + str(nPCs)
     adata = createAnnData(f)
     asw_val = silhouette_coeff_ASW(adata, method_use, save_dir, 
                                           save_fn, percent_extract=0.8)
