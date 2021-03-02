@@ -1,5 +1,11 @@
 ruleorder: LIGER_sort_annots > make_promoter_annot
 
+METRICS=["Silhouette", "Anchoring_dist_rank", "Anchoring_dist", "Graph_connectivity", "Cluster_agreement", "Anchoring_dist_rank_full"]
+#SOFTWARES=["Raw", "Seurat3", "LIGER"]
+SOFTWARES=["Raw","Seurat3", "LIGER", "SIMBA"]
+DATASETS=["pbmc", "mouse-skin", "mouse-skin_subset"]
+
+
 rule LIGER_sort_fragments:
     input:
         "data/{dataset}/atac_fragments.bed.gz"
@@ -39,20 +45,35 @@ rule LIGER_bedmap:
     shell:
         "bedmap --ec --delim '\t' --echo --echo-map-id {input} > {output}"
 
-
-rule evaluate_metric_each:
+rule create_pca:
     input:
         "{software}/{dataset}/integrated_embedding.txt"
     output:
+        "{software}_pca/{dataset}/integrated_embedding.txt"
+    shell:
+        "mkdir -p {wildcards.software}_pca; Rscript ../run_pca_on_embedding.R {input} {output}"
+
+rule get_common_cells:
+    input:
+        expand("{software}/{{dataset}}/integrated_embedding.txt", software=SOFTWARES)
+    output:
+        "metrics/cells_use_{dataset}.txt"
+    shell:
+        "Rscript metrics/get_common_cells.R {input} {output}"
+
+rule evaluate_metric_each:
+    input:
+        "{software}/{dataset}/integrated_embedding.txt",
+        "metrics/cells_use_{dataset}.txt"
+    output:
         "{software}/{dataset}/metric_{metric}.txt"
     params:
-        output_dir="{software}/{dataset}/"
-    threads: 1
+        output_dir="{software}/{dataset}/",
+        threads=20
     shell:
-        "Rscript metrics/get_metric_each.R {wildcards.metric} {input} 20 {params.output_dir} {threads}"
+        "Rscript metrics/get_metric_each.R {wildcards.metric} {input} {params.output_dir} {params.threads}"
     
 
-METRICS=["Silhouette", "Anchoring_dist_rank", "Anchoring_dist", "Graph_connectivity", "Celltype_agreement"]
 rule collect_metrics_each:
     input:
         expand("{{software}}/{{dataset}}/metric_{metric}.txt", metric=METRICS)
@@ -64,8 +85,6 @@ rule collect_metrics_each:
         "Rscript metrics/collect_metrics_each.R {input} {params.output_dir}"
 
 
-SOFTWARES=["Raw", "Seurat3", "LIGER", "SIMBA"]
-DATASETS=["pbmc", "mouse-skin"]
 
 
 rule collect_metrics_dataset:

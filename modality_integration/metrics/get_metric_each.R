@@ -4,48 +4,37 @@ args = commandArgs(trailingOnly = TRUE)
 
 metric = args[1]
 embedding_file = args[2]
-nDims = as.numeric(args[3])
+cells_file = args[3]
 output_path = args[4]
-load_files = TRUE
-save_files = TRUE
+nThreads = as.numeric(args[5])
 
-stopifnot(metric %in% c("Silhouette", "Anchoring_dist_rank", "Anchoring_dist", "Graph_connectivity", "Celltype_agreement"))
+stopifnot(metric %in% c("Silhouette", "Anchoring_dist_rank", "Anchoring_dist", "Graph_connectivity", "Cluster_agreement", "Anchoring_dist_rank_full"))
 
-
+cells_use = read.table(cells_file, head = F, stringsAsFactors = F)$V1
+head(cells_use)
 embedding = read.table(embedding_file)
-embedding$cell.ft = factor(unlist(lapply(strsplit(rownames(embedding), split = ".", fixed = TRUE), function(cid) paste0(cid[2:length(cid)], collapse = "."))))
+embedding = embedding[cells_use, ]
+nDims = ncol(embedding)-2
+cell_identity = factor(embedding$batch)
+embedding = embedding[,1:nDims]
+nCells = length(cell_identity)/2
 
-load_or_create <- function(tmp_rds){
-    if (load_files & file.exists(paste0(output_path, tmp_rds))) dist.m = readRDS(paste0(output_path, tmp_rds))
-    else {
-        dist.m = as.matrix(dist(embedding[,1:nDims], method = "euclidean"))
-        if (save_files){
-                saveRDS(dist.m, paste0(output_path, tmp_rds))
-        }
-    }
-
-    message("Done producing distance matrices")
-    return(dist.m)
-}
-
-
-
+# get modality
+modality = sapply(strsplit(rownames(embedding), split = ".", fixed = TRUE), '[', 1)
 
 if (metric == "Silhouette") {
-    dist.m = load_or_create("/.dist.m.rds")
-    res = calculate_silhouette(dist.m, embedding$cell.ft, summary_stat = identity)
+    res = calculate_silhouette(embedding, cell_identity, summary_stat = identity)
 } else if (metric == "Anchoring_dist_rank") {
-   dist.rank.m = load_or_create("/.dist.rank.m.rds")
-   res = calculate_self_dist_rank(dist.rank.m, embedding$cell.ft, summary_stat = identity)
+   res = calculate_self_dist_rank(embedding, cell_identity, modality = modality, threads = 1)
 } else if (metric == "Anchoring_dist") {
-    dist.rank.m = load_or_create("/.dist.rank.m.rds")
-    res = calculate_self_dist_rank(dist.rank.m, embedding$cell.ft, summary_stat = identity)
+    res = calculate_anchoring_dist(embedding, cell_identity, summary_stat = identity)
 } else if (metric == "Graph_connectivity") {
-    dist.rank.m = load_or_create("/.dist.rank.m.rds")
-    res = calculate_graph_connectivity(dist.rank.m, embedding$cell.ft, k = 50)
-} else if (metric == "Celltype_agreement") {
-    res = calculate_ARI(embedding)
-}
+    res = calculate_graph_connectivity(embedding, cell_identity, k = 50)
+} else if (metric == "Cluster_agreement") {
+    res = calculate_ARI(embedding, cell_identity)
+}  else if (metric == "Anchoring_dist_rank_full") {
+   res = calculate_self_dist_rank_all(embedding, cell_identity, modality = modality, threads = nThreads)
+} 
 
 res.df = data.frame(metric = metric, value = res, mean = mean(res), median = median(res))
 rownames(res.df) = names(res)

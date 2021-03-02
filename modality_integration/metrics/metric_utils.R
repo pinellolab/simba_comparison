@@ -36,21 +36,31 @@ calculate_silhouette <- function(embedding, cell_identity, summary_stat = median
 }
 
 
-sampled_self_rank <- function(embedding, cell_identity, size = 2000, seed = 1){
+sampled_self_rank <- function(embedding, cell_identity, modality, size = 2000, seed = 1, threads = 20){
     set.seed(seed)
+    require(parallel)
     cell_identity = factor(cell_identity)
+    
     sampled_cid = sample(levels(cell_identity), size = size)
     sampled_cells = cell_identity[cell_identity %in% sampled_cid]
+    
     reflection_idx = get_reflection_idx(sampled_cells)
     emb = embedding[cell_identity %in% sampled_cid, ]
+
     dist_matrix = as.matrix(dist(emb))
-    rank_matrix = apply(dist_matrix, 1, rank) - 1
+    rank_matrix = do.call(rbind, mclapply(1:nrow(dist_matrix), function(i) {
+                                     this_mod = modality[i]
+                                     dist_row = dist_matrix[i,]
+                                     dist_row[which(modality == this_mod)] <- NA
+                                     return(rank(dist_row) - 1)}, 
+                                mc.cores = threads))
     #self_rank = mapply(function(row, i) row[i], as.data.frame(rank_matrix), reflection_idx)
-    self_rank = sapply(1:nrow(rank_matrix), function(i) rank_matrix[i, reflection_idx[i]])
+    self_rank = unlist(mclapply(1:nrow(rank_matrix), function(i) rank_matrix[i, reflection_idx[i]], 
+                                mc.cores = threads))
     return(self_rank)
 }
 
-calculate_self_dist_rank <- function(embedding, cell_identity, threads = 20){
+calculate_self_dist_rank <- function(embedding, cell_identity, modality, threads = 20){
     require(foreach)
     R = 20
     cl <- parallel::makeForkCluster(threads)
@@ -58,7 +68,7 @@ calculate_self_dist_rank <- function(embedding, cell_identity, threads = 20){
     # Samples 5% of the cell identity to check the neighborhood ranks.
     sample_size = min(2000, length(cell_identity) %/% R)
     self_ranks.l = foreach(r=1:R, .combine = 'c') %dopar% {
-        list(sampled_self_rank(embedding, cell_identity, sample_size, seed = r) / sample_size)
+        list(sampled_self_rank(embedding, cell_identity, modality, sample_size, seed = r) / sample_size)
     }
     
     parallel::stopCluster(cl)
@@ -66,45 +76,66 @@ calculate_self_dist_rank <- function(embedding, cell_identity, threads = 20){
     #return(sapply(self_ranks.l, median))
 }
 
-calculate_self_dist_rank_all <- function(embedding, cell_identity){
-    require(foreach)
-        # Samples 5% of the cell identity to check the neighborhood ranks.
+calculate_self_dist_rank_all <- function(embedding, cell_identity, modality, threads = 20){
     sample_size = length(cell_identity) %/% 2
-    self_ranks.l = sampled_self_rank(embedding, cell_identity, sample_size, seed = 1) / sample_size
+    self_ranks.l = sampled_self_rank(embedding, cell_identity, modality, sample_size, seed = 1, threads = threads) / sample_size
 
     return(self_ranks.l)
                 #return(sapply(self_ranks.l, median))
 }
 
 
-calculate_anchoring_dist <- function(embedding, cell_identity, k = 50, summary_stat = median){
+calculate_anchoring_dist <- function(embedding, cell_identity, k = 200, summary_stat = median){
     reflection_idx = get_reflection_idx(cell_identity)
     my_reflection = embedding[reflection_idx,]
     dist_self = calculate_pdist(embedding, my_reflection)
 
     # Get normalization factor: mean distance to kNN (k = 50)
+    #require(FNN)
     #res = get.knn(embedding, k)
     #norm_factor = apply(res$nn.dist, 1, mean)
 
     # Normalize by randomly sampled distance
-    dists = sapply(1:5000, function(i) {pair = sample(cell_identity, 2); dist(embedding[pair[1],], embedding[pair[2],])}
+    nsample_pairs = (length(cell_identity)/2)%/%10
+    message(paste0("Normalizing for mean distance of ", nsample_pairs, " random pairs"))
+    dists = sapply(1:nsample_pairs, function(i) {pair = sample(cell_identity, 2); calculate_pdist(embedding[pair[1],], embedding[pair[2],])})
     norm_factor = mean(dists)
 
     anchoring_dist = dist_self / norm_factor
     return(summary_stat(anchoring_dist))
 }
 
-calculate_ARI <- function(embedding, cell_identity){
+get_n_clusters <- function(embedding, nClusters, max_steps = 20){
     require(Seurat)
-    nn_graph = FindNeighbors(embedding) # k = 20 by default, use all dimensions
-    clusters = FindClusters(nn_graph$snn)[,1] #res = 0.8 by default
+    nn_graph = FindNeighbors(embedding)
+    steps = 0
+    current_min = 0
+    current_max = 3
+    while(steps < max_steps){
+        print(paste0('step ', steps))
+        current_resolution = current_min + ((current_max - current_min)/2)
+        clusters = FindClusters(nn_graph$snn, resolution = current_resolution)[,1]
+        current_n = length(unique(clusters))
+        print(paste0("got ", current_n, " at resolution ", current_resolution))
+        if (current_n > nClusters) current_max = current_resolution
+        else if (current_n < nClusters) current_min = current_resolution
+        else{return(clusters)}
+        steps = steps + 1
+    }
+    print("Cannot find the number of clusters")
+    print(paste0("Clustering solution from last iteration is used:", current_n, " at resolution ", current_resolution))
+    return(clusters)
+}
+
+calculate_ARI <- function(embedding, cell_identity, nClusters = 20){
+    require(Seurat)
+    clusters = get_n_clusters(embedding, 20) #res = 0.8 by default
     in_same_celltype = sapply(levels(cell_identity), function(lvl){
                           cell_types = clusters[which(cell_identity == lvl)]
                           if( length(cell_types) != 2) {print(lvl); stop()}
                           return( as.numeric(cell_types[1] == cell_types[2]) )})
-#    res = mclust::adjustedRandIndex(, embedding$cell.ft)
     print(str(in_same_celltype))
-    return(mean(in_same_celltype))
+    return(in_same_celltype)
 }
 
 calculate_graph_connectivity <- function(embedding, cell_identity, k = 50){
