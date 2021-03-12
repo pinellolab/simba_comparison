@@ -40,7 +40,7 @@ visualize = T
 outfile_prefix = args[3]
 save_obj = T
 
-src_dir = "batch_correction/Harmony/"
+src_dir = "Harmony/"
 working_dir = args[4]
 dir.create(working_dir, recursive = TRUE)
 

@@ -54,7 +54,7 @@ def createAnnData(myDatafn):
     ib = np.isin(myData.keys(), bex)
     cex = ['celltype','CellType','cell_type','Cell_Type','ct']
     ict = np.isin(myData.keys(), cex)
-    adata = sc.AnnData(myData.values[:,0:nPCs])
+    adata = sc.AnnData(myData.values[:,0:np.shape(myData.values)[1]-2])
     adata.obs_names = myData.index
     adata.obs['batch'] = myData.values[:, np.where(ib)[0][0]]  # factor function in R
     adata.obs['cell_type'] = myData.values[:, np.where(ict)[0][0]]
@@ -67,7 +67,7 @@ sc.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hint
 method_use = sys.argv[1]
 pca_file = sys.argv[2]
 save_dir = sys.argv[3]
-nPCs = int(sys.argv[4])
+emb_type = sys.argv[4]
 print("Saving to ", save_dir)
 
 #if not os.path.exists(save_dir+'/ASW/'): os.makedirs(os.path.join(save_dir,'/ASW/')) 
@@ -79,7 +79,7 @@ print("Saving to ", save_dir)
 def main(f = pca_file):
     #final_ls = []
     print('Extract asw for ', method_use)
-    save_fn = method_use + '_ASW_PC' + str(nPCs)
+    save_fn = method_use + '_ASW_' + emb_type
     adata = createAnnData(f)
     asw_val = silhouette_coeff_ASW(adata, method_use, save_dir, 
                                           save_fn, percent_extract=0.8)

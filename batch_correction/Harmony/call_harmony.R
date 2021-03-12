@@ -113,7 +113,7 @@ call_harmony <- function(b_seurat, batch_label, celltype_label, npcs = 20,
   #str(b_seurat$meta.data$batch_label)
 #  harmony_res$batch <- b_seurat@meta.data[, ]
   harmony_res$celltype <- b_seurat@meta.data$CellType
-  write.table(harmony_res, file=paste0(saveout_dir,outfilename_prefix,pca_filename,".txt"), quote=F, sep='\t', row.names = T, col.names = NA)
+  write.table(harmony_res, file=paste0(saveout_dir,outfilename_prefix,"_Harmony_embedding.txt"), quote=F, sep='\t', row.names = T, col.names = NA)
 
   if(save_obj) {
     saveRDS(b_seurat, file=paste0(saveout_dir,outfilename_prefix,obj_filename,".RDS"))

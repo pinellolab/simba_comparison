@@ -7,12 +7,12 @@ rm(list=ls())
 
 args = commandArgs(trailingOnly = TRUE)
 if (length(args) != 4){
-    stop("Usage: Rscript run_ARISampled.R software pca_filename out_dir nPCs")
+    stop("Usage: Rscript run_ARISampled.R software pca_filename out_dir emb_type")
 }
 # source relevant functions
 #source("Batch-effect-removal-benchmarking/Script/evaluation/ARI/ARI_utils/run_ARISampled.R")
-source("batch_correction/metrics/ari_calcul_sampled.R")
-#source("batch_correction/Batch-effect-removal-benchmarking/Script/evaluation/ARI/ARI_utils/conclude_ARISampled.R")
+source("metrics/ari_calcul_sampled.R")
+#source("Batch-effect-removal-benchmarking/Script/evaluation/ARI/ARI_utils/conclude_ARISampled.R")
 
 ##############################
 ############ Set arguments
@@ -25,7 +25,7 @@ method_use = args[1]
 
 # send output to out_dir
 out_dir = args[3]
-nPCs = as.integer(args[4])
+emb_type = args[4]
 
 
 
@@ -37,13 +37,13 @@ nPCs = as.integer(args[4])
 #'
 #' @param fn '_pca.csv' file
 
-run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use){
+run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use, emb_type = emb_type){
 
   thisData <- read.table(pca_file, sep = "\t", head = T, row.names = 1)
 
   # Get relevant columns
-  colPCA <- grep('([Pp][Cc]_?)|(V)|(harmony.?)|(W)|(D)',colnames(thisData))
-  colPCA <- colPCA[1:nPCs]
+  colPCA <- grep('([Pp][Cc]_?)|(V)|(harmony.?)|(W)|(D)|(UMAP)',colnames(thisData))
+  
   str(thisData)
   colnames(thisData)[grep('[cC]ell_?[tT]ype',colnames(thisData))] <- 'celltype'
   colnames(thisData)[grep('([bB]atch)|(BATCH)|(batchlb)',colnames(thisData))] <- 'batch'
@@ -56,12 +56,12 @@ run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use){
   print(colnames(thisData))
   temp<-ari_calcul_sampled(myData=thisData, cpcs=colPCA, isOptimal=FALSE,
                            method_use = method_use,
-                           base_name='')
+                           base_name='', emb_type = emb_type)
   return(temp)
 }
 
 
-Rseurat3<-run_ARISampled(pca_filename, out_dir, eval_metric, method_use)
+Rseurat3<-run_ARISampled(pca_filename, out_dir, eval_metric, method_use, emb_type = emb_type)
 
 ##############################
 ############ Extracting all data from all methods in dataset 

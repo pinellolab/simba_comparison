@@ -29,9 +29,9 @@ k = 20
 nrep = 3
 visualize = T
 outfile_prefix = args[3]
-save_obj = F
+save_obj = T
 
-src_dir = "batch_correction/LIGER/"
+src_dir = "LIGER/"
 working_dir = args[4]
 
 expr_filename = args[1]

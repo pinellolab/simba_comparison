@@ -1,0 +1,113 @@
+
+METRICS=["ARI", "ASW"]
+SOFTWARES=["Raw_nopp", "Raw_PCA", "Seurat3", "Harmony", "LIGER", "SIMBA", "SIMBA-anchor"]
+DATASETS=["murine-atlas", "pancreas"]
+
+wildcard_constraints:
+    software="Raw_nopp|Raw_PCA|Seurat3|Harmony|LIGER|SIMBA|SIMBA-anchor"
+
+rule convert_h5ad:
+    input:
+        "SIMBA_h5ad_paths.txt"
+    output:
+        expand("SIMBA/output/{dataset}_SIMBA_embedding.txt", dataset=DATASETS)
+    shell:
+        "while IFS= read -r LINE;do python ../convert_h5.py $LINE; done < {input}"
+
+rule create_pca:
+    input:
+        "{software}/output/{dataset}_{software}_embedding.txt"
+    output:
+        "{software}/output/{dataset}_{software}_pca.txt"
+    shell:
+        "Rscript run_pca_on_embedding.R {input} {output} 20"
+
+rule create_umap:
+    input:
+        "{software}/output/{dataset}_{software}_embedding.txt"
+    output:
+        "{software}/output/{dataset}_{software}_umap.txt"
+    shell:
+        "Rscript run_umap_on_embedding.R {input} {output}"
+
+rule plot_umap:
+    input:
+        "{software}/output/{dataset}_{software}_umap.txt"
+    output:
+        "plots/{dataset}_{software}_umap_nolab.pdf"
+    shell:
+        "mkdir -p plots/; Rscript plot_umap.R {input} {output}"
+
+rule plot_all:
+    input:
+        expand("plots/{dataset}_{software}_umap_nolab.pdf", software = SOFTWARES, dataset=DATASETS)
+    shell:
+        "echo 'do nothing'" 
+        
+
+rule correct_batch:
+    input:
+        "data/{dataset}/{dataset}_expr.txt.gz",
+        "data/{dataset}/{dataset}_metadata.txt.gz",
+    params:
+        output_prefix="{dataset}",
+        output_dir="{software}/output/"
+    output:
+        #"{software,^/(?!SIMBA)([a-z0-9]+)$}/output/{dataset}_{software}_embedding.txt"
+        "{software}/output/{dataset}_{software}_embedding.txt"
+    shell:
+        "Rscript {wildcards.software}/run_{wildcards.software}.R {input} '{params.output_prefix}' '{params.output_dir}'| tee '{params.output_dir}/{wildcards.dataset}_log'"
+       
+#nPC_ft=lambda wildcards: 50 if wildcards.software == "SIMBA" else 20
+#nPC_ft = 20
+
+rule evaluate_ARI:
+    input:
+        "{software}/output/{dataset}_{software}_{emb}.txt"
+    output:
+        "metrics/{dataset}/{software}_ARI_{emb}.txt"
+    params:
+        output_dir="metrics/{dataset}/",
+    shell:
+        "Rscript metrics/run_ARISampled.R {wildcards.software} {input} '{params.output_dir}' {wildcards.emb}"
+
+rule evaluate_ASW:
+    input:
+        "{software}/output/{dataset}_{software}_{emb}.txt"
+    output:
+        "metrics/{dataset}/{software}_ASW_{emb}.txt"
+    params:
+        output_dir="metrics/{dataset}/",
+    shell:
+        "python metrics/run_ASW.py {wildcards.software} {input} {params.output_dir} {wildcards.emb}"
+
+rule evaluate_LISI:
+    input:
+        expand("{software}/output/{{dataset}}_{software}_{{emb}}.txt", software=SOFTWARES)
+    output:
+        "metrics/{dataset}/LISI_40_{emb}.txt" 
+    params:
+        output_dir="metrics/{dataset}/",
+    shell: 
+        "Rscript metrics/run_LISI.R {input} {params.output_dir} {wildcards.emb}"
+
+rule collect_metrics_for_method:
+    input:
+        expand("metrics/{{dataset}}/{{software}}_{metric}_{{emb}}.txt", metric=METRICS),
+        "metrics/{dataset}/LISI_40_{emb}.txt"
+    output:
+        "metrics/{dataset}/{software}_metrics_collected_{emb}.txt"
+    params:
+        output_dir="metrics/{dataset}/"
+    shell:
+        "Rscript metrics/collect_metrics_for_method.R {wildcards.software} {input} {params.output_dir} {wildcards.emb}"
+
+rule collect_metrics:
+    input: 
+        expand("metrics/{{dataset}}/{software}_metrics_collected_{{emb}}.txt", software=SOFTWARES)
+    output:
+        "metrics/{dataset}/metrics_collected_{emb}.txt"
+    params:
+        output_dir="metrics/{dataset}/"
+    shell:
+        "Rscript metrics/collect_metrics_all.R {input} {params.output_dir} {wildcards.emb}"

@@ -6,7 +6,7 @@ library(ggpubr)
 rm(list=ls())
 args = commandArgs(trailingOnly = TRUE)
 
-source('batch_correction/metrics/lisi_utils.R')
+source('metrics/lisi_utils.R')
 
 method_use = args[1]
 pca_file = args[2]

@@ -35,7 +35,7 @@ visualize = T
 outfile_prefix = args[3]
 save_obj = T
 
-src_dir = "batch_correction/Seurat3/"
+src_dir = "Seurat3/"
 working_dir = args[4]
 dir.create(working_dir, recursive = TRUE)
 
@@ -69,8 +69,8 @@ batch_list = seurat3_preprocess(
                 numVG = numVG, nhvg = nhvg, 
                 batch_label = batch_label, celltype_label = celltype_label)
 
-dir.create("batch_correction/Raw")
-saveRDS(batch_list, "batch_correction/Raw/batch_list.RDS")
+dir.create("Raw")
+saveRDS(batch_list, "Raw/batch_list.RDS")
 
 batches = call_seurat3(batch_list, batch_label, celltype_label, npcs, plotout_dir = working_dir, saveout_dir = working_dir, outfilename_prefix = outfile_prefix, visualize = visualize, save_obj = save_obj)
 

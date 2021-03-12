@@ -54,7 +54,7 @@ seurat3_preprocess <- function(expr_mat_seurat, metadata,
   return(batch_list)
 }
 
-call_seurat3 <- function(batch_list, batch_label, celltype_label, npcs = 20, 
+call_seurat3 <- function(batch_list, batch_label, celltype_label, npcs = 50, 
                          plotout_dir = "", saveout_dir = "", 
                          outfilename_prefix = "", 
                          visualize = T, save_obj = T, load_obj = F)
@@ -100,7 +100,7 @@ call_seurat3 <- function(batch_list, batch_label, celltype_label, npcs = 20,
 #    seurat3_res$batch <- batches@meta.data[, ]
     seurat3_res$celltype <- batches@meta.data[, celltype_label]
     write.table(seurat3_res, file=paste0(saveout_dir,outfilename_prefix,pca_filename,".txt"), quote=F, sep='\t', row.names = T, col.names = NA)
-
+    write.table(seurat3_res, file=paste0(saveout_dir,outfilename_prefix,"_Seurat3_embedding.txt"), quote=F, sep='\t', row.names = T, col.names = NA)
     if(save_obj) {
       saveRDS(batches, file=paste0(saveout_dir,outfilename_prefix,obj_filename,".RDS"))
     }
@@ -113,7 +113,10 @@ call_seurat3 <- function(batch_list, batch_label, celltype_label, npcs = 20,
 
     #batches <- RunTSNE(batches, reduction = "pca", dims = 1:npcs, do.fast = T, k.seed = k_seed, check_duplicates = FALSE, perplexity = tsne_perplex)
     batches <- RunUMAP(batches, reduction = "pca", dims = 1:npcs, do.fast = T, k.seed = k_seed)
-
+    umap <- as.data.frame(batches@reductions$umap@cell.embeddings)
+    umap$batchlb <- batches@meta.data[, batch_label]
+    umap$celltype <- batches@meta.data[, celltype_label]
+    write.table(umap, file=paste0(saveout_dir,outfilename_prefix,"_Seurat3_umap.txt"), quote=F, sep='\t', row.names = T, col.names = NA)
     ##########################################################
     #tsne plot
     #p11 <- DimPlot(object = batches, reduction = 'tsne', group.by = batch_label)

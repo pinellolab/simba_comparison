@@ -14,7 +14,8 @@
 ari_calcul_sampled <- function(myData, cpcs, isOptimal=FALSE, 
                                method_use='resnet',
                                base_name='', maxiter=30, 
-					           celltypelb='celltype', batchlb='batch' )
+					           celltypelb='celltype', batchlb='batch', 
+                              emb_type = emb_type )
 {
   library(NbClust)
   library(mclust)
@@ -132,8 +133,7 @@ ari_calcul_sampled <- function(myData, cpcs, isOptimal=FALSE,
                       "ari_celltype"=total_ari_celltype)
   
   # write final dataframe to a text file
-  nPCs = length(cpcs)
-  write.table(myARI, file = paste0(base_name,method_use,"_ARI_PC", nPCs, ".txt"), row.names = FALSE, col.names = TRUE, quote = FALSE, sep="\t")
+  write.table(myARI, file = paste0(base_name,method_use,"_ARI_", emb_type, ".txt"), row.names = FALSE, col.names = TRUE, quote = FALSE, sep="\t")
   
   print('Save output in folder')
   print(base_name)

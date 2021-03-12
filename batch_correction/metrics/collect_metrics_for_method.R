@@ -7,7 +7,7 @@ ARI_output_path = args[2]
 ASW_output_path = args[3]
 LISI_output_path = args[4]
 output_dir = args[5]
-nPCs = args[6]
+emb_type = args[6]
 
 if ( ! grepl("ARI", ARI_output_path) ) stop(paste0("First input not ARI:", ARI_output_path))
 if ( ! grepl("ASW", ASW_output_path) ) stop("Second input not ASW")
@@ -36,4 +36,4 @@ LISI_norm_dat[1, "methods_use"] = "LISI_norm"
 colnames(LISI_norm_dat) <- c("metric", "batch", "celltype")
 
 collected_metrics = bind_rows(list(ARI_median, ASW_median, LISI_dat, LISI_norm_dat))
-write.table(collected_metrics, file = paste0(output_dir, "/", method_use, "_metrics_collected_PC", nPCs, ".txt"), row.names = F, quote = F)
+write.table(collected_metrics, file = paste0(output_dir, "/", method_use, "_metrics_collected_", emb_type, ".txt"), row.names = F, quote = F)

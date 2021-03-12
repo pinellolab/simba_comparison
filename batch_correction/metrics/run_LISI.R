@@ -6,11 +6,11 @@ library(ggpubr)
 rm(list=ls())
 args = commandArgs(trailingOnly = TRUE)
 
-source('batch_correction/metrics/lisi_utils.R')
+source('metrics/lisi_utils.R')
 
 pca_files = args[1:(length(args)-2)]
 output_dir = args[length(args)-1]
-nPCs = as.integer(args[length(args)])
+emb_type = args[length(args)]
 
 #this_dir <- '/home/hoa/hoatran/demo_normalization/manuscript_results/dataset2_cellatlas/'
 #setwd(this_dir)
@@ -23,7 +23,7 @@ plx = 40
 #data_dir = paste0('/acrc/jinmiao/CJM_lab/hoatran/demo_normalization/xiaomeng/generate_PCA_tSNE_UMAP/',dataset_use,'/')
 
 #methods_use = c("Raw_nopp", "Raw_PCA", "Seurat3", "Harmony", "LIGER", "SIMBA")
-methods_use = sapply(strsplit(pca_files, split="/"), function(vec) vec[2])
+methods_use = sapply(strsplit(pca_files, split="/"), function(vec) vec[1])
 message(paste0("Calculating LISI for ", paste0(methods_use, collapse = ", ")))
 
 fn_ls <- pca_files
@@ -35,7 +35,7 @@ stopifnot(length(methods_use) == length(fn_ls))
 
 for (i in rep(1:length(methods_use), 1)){
     print(methods_use[i])
-    run_LISI_final('', pca_files[i], output_dir, eval_metric, methods_use[i], plx, nPCs = nPCs)
+    run_LISI_final('', pca_files[i], output_dir, eval_metric, methods_use[i], plx, emb_type = emb_type)
 }
 
 #####################################
@@ -48,7 +48,7 @@ for (i in rep(1:length(methods_use), 1)){
 # resnet_df$cell <- gsub('-[0-9]$','',resnet_df$cell)
 # rownames(resnet_df) <- resnet_df$cell
 
-pca_file = paste0("batch_correction/Raw_PCA/output/", dataset_use,'_Raw_PCA_pca.txt')
+pca_file = paste0("Raw_PCA/output/", dataset_use,'_Raw_PCA_pca.txt')
 meta_ls <- get_celltype_common(pca_file)
 length(meta_ls$cells_common)
 get_cells_integration_iLISI_v2(dataset_use, methods_use, meta_ls, output_dir, plx, eval_metric)
@@ -66,47 +66,5 @@ get_celltype_mixing_cLISI(dataset_use, methods_use, output_dir, plx, eval_metric
 ############################
 
 
-#median_LISI(output_dir, methods_use = method_use, plx = plx, eval_metric = eval_metric, nPCs = nPCs)
-summary_LISI(output_dir, methods_use = methods_use, plx = plx, eval_metric = eval_metric, nPCs = nPCs)
-
-# fn <- 'dataset2_raw_pca.csv'
-# meta_ls <- get_celltype_common(data_dir, fn)
-# length(meta_ls$ct_common)
-
-
-# summary_LISI <- function(meta_ls, this_dir, plottitle='LISI - dataset', plx=40, eval_metric='LISI/',ht=400, wd=400){
-#   iLISI_df <- read.csv(paste0(this_dir, eval_metric,"result/",plx,"/iLISI_summary.csv"), head=T, check.names = F)
-#   colns <- c('methods_use', 'iLISI_median', 'iLISI_median_norm')
-#   
-#   median_iLISI <- normalize_values(iLISI_df, colns, min_val=min(iLISI_df), max_val=max(iLISI_df))
-#   mini <- min(median_iLISI$iLISI_median_norm)
-#   maxi <- max(median_iLISI$iLISI_median_norm)
-#   median_iLISI$iLISI_median_norm2 <- (median_iLISI$iLISI_median_norm - mini) / (maxi - mini)
-#   
-#   
-#   cLISI_df <- read.csv(paste0(this_dir,eval_metric,"result/",plx,"/cLISI_summary.csv"), head=T, check.names = F)
-#   colns <- c('methods_use', 'cLISI_median', 'cLISI_median_norm')
-#   median_cLISI <- normalize_values(cLISI_df, colns, min_val=min(cLISI_df), max_val=max(cLISI_df))
-#   median_cLISI$cLISI_median_norm_sub <- 1 - median_cLISI$cLISI_median_norm
-#   minc <- min(median_cLISI$cLISI_median_norm_sub)
-#   maxc <- max(median_cLISI$cLISI_median_norm_sub)
-#   median_cLISI$cLISI_median_norm_sub2 <- (median_cLISI$cLISI_median_norm_sub - minc) / (maxc - minc)
-#   
-#   
-#   final_df = merge(median_iLISI, median_cLISI, by="methods_use")
-#   final_df$sum_normXY <- final_df$iLISI_median_norm2 + final_df$cLISI_median_norm_sub2
-#   final_df$fscore <- (2 * final_df$iLISI_median_norm2 * final_df$cLISI_median_norm_sub2)/
-#                      (final_df$iLISI_median_norm2 + final_df$cLISI_median_norm_sub2)
-#   
-#   final_df <- final_df[order(final_df$fscore, decreasing = T),]
-#   # final_df$cLISI_median_norm_sub = 1 - final_df$cLISI_median_norm
-#   write.csv(final_df,paste0(this_dir, eval_metric, "result/", plx, '/', 'summary_median_', plx, '.csv'), 
-#               quote=F, row.names=F)
-#   
-# 
-#   # plot final LISI
-#   plot_final_LISI(final_df, plottitle, this_dir, plx, ht, wd, eval_metric, 
-#                   xstring = 'cLISI_median_norm_sub', ystring = 'iLISI_median_norm', plottype = 'methods_use')
-#   
-# }
+summary_LISI(output_dir, methods_use = methods_use, plx = plx, eval_metric = eval_metric, emb_type = emb_type)
 

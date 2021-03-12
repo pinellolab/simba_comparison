@@ -84,7 +84,7 @@ call_liger <- function(ligerex, metadata, batch_label, celltype_label,
   #plotting
   k_seed = 10
   tsne_perplex = 30
-  tsneplot_filename = '_LIGER_tsne'
+  tsneplot_filename = '_LIGER_umap'
   obj_filename = "_LIGER_sobj"
   pca_filename = "_LIGER_pca"
   
@@ -109,7 +109,7 @@ call_liger <- function(ligerex, metadata, batch_label, celltype_label,
   metadata <- metadata[cells_use,]
   ligerex_res$batchlb <- metadata[, batch_label]
   ligerex_res$celltype <- metadata[, celltype_label]
-  write.table(ligerex_res, file=paste0(saveout_dir,outfilename_prefix,pca_filename,".txt"), quote=F, sep='\t', row.names = T, col.names = NA)
+  write.table(ligerex_res, file=paste0(saveout_dir,outfilename_prefix,"_LIGER_embedding.txt"), quote=F, sep='\t', row.names = T, col.names = NA)
   
   if(save_obj) {
     saveRDS(ligerex, file=paste0(saveout_dir,outfilename_prefix,obj_filename,".RDS"))
@@ -120,7 +120,12 @@ call_liger <- function(ligerex, metadata, batch_label, celltype_label,
     ##########################################################
     #preparing plots
     
-    ligerex = liger::runTSNE(ligerex, perplexity = tsne_perplex, method = "Rtsne", rand.seed = k_seed)
+    #ligerex = liger::runTSNE(ligerex, perplexity = tsne_perplex, method = "Rtsne", rand.seed = k_seed)
+    ligerex = liger::runUMAP(ligerex, distance = 'cosine', n_neighbors = 30, min_dist = 0.3)
+    umap <- as.data.frame(ligerex@tsne.coords)
+    umap$batchlb <- metadata[, batch_label]
+    umap$celltype <- metadata[, celltype_label]
+    write.table(umap, file = paste0(saveout_dir,outfilename_prefix,"_LIGER_umap.txt"), quote=F, sep='\t', row.names = T, col.names = NA)
     
     ##########################################################
     #tSNE plot
