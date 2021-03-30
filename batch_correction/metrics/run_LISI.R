@@ -48,7 +48,7 @@ for (i in rep(1:length(methods_use), 1)){
 # resnet_df$cell <- gsub('-[0-9]$','',resnet_df$cell)
 # rownames(resnet_df) <- resnet_df$cell
 
-pca_file = paste0("Raw_PCA/output/", dataset_use,'_Raw_PCA_pca.txt')
+pca_file = pca_files[1]
 meta_ls <- get_celltype_common(pca_file)
 length(meta_ls$cells_common)
 get_cells_integration_iLISI_v2(dataset_use, methods_use, meta_ls, output_dir, plx, eval_metric)

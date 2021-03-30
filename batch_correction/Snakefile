@@ -2,15 +2,16 @@
 METRICS=["ARI", "ASW"]
 SOFTWARES=["Raw_nopp", "Raw_PCA", "Seurat3", "Harmony", "LIGER", "SIMBA", "SIMBA-anchor"]
 DATASETS=["murine-atlas", "pancreas"]
+SUFFIXES=["-anchor",""]
 
 wildcard_constraints:
-    software="Raw_nopp|Raw_PCA|Seurat3|Harmony|LIGER|SIMBA|SIMBA-anchor"
+    software="Raw_nopp|Raw_PCA|Seurat3|Harmony|LIGER|SIMBA|SIMBA-anchor|SIMBA-anchor-v4"
 
 rule convert_h5ad:
     input:
         "SIMBA_h5ad_paths.txt"
     output:
-        expand("SIMBA/output/{dataset}_SIMBA_embedding.txt", dataset=DATASETS)
+        expand("SIMBA{suffix}/output/{dataset}_SIMBA{suffix}_embedding.txt", dataset=DATASETS, suffix=SUFFIXES)
     shell:
         "while IFS= read -r LINE;do python ../convert_h5.py $LINE; done < {input}"
 
@@ -28,7 +29,7 @@ rule create_umap:
     output:
         "{software}/output/{dataset}_{software}_umap.txt"
     shell:
-        "Rscript run_umap_on_embedding.R {input} {output}"
+        "Rscript ../run_umap_on_embedding.R {input} {output}"
 
 rule plot_umap:
     input:
@@ -36,13 +37,23 @@ rule plot_umap:
     output:
         "plots/{dataset}_{software}_umap_nolab.pdf"
     shell:
-        "mkdir -p plots/; Rscript plot_umap.R {input} {output}"
+        "mkdir -p plots/; Rscript plots/plot_umap.R {input} {output} {wildcards.dataset}"
+
+
+rule plot_umap_legend:
+    input:
+        "{software}/output/{dataset}_{software}_umap.txt"
+    output:
+        "plots/{dataset}_{software}_umap_wlab.pdf"
+    shell:
+        "mkdir -p plots/; Rscript plots/plot_umap.R {input} {output} {wildcards.dataset} TRUE"
+
 
 rule plot_all:
     input:
-        expand("plots/{dataset}_{software}_umap_nolab.pdf", software = SOFTWARES, dataset=DATASETS)
-    shell:
-        "echo 'do nothing'" 
+        expand("plots/{dataset}_{software}_umap_nolab.pdf", software = SOFTWARES, dataset=DATASETS),
+        expand("plots/{dataset}_SIMBA_umap_wlab.pdf", dataset=DATASETS)
+        
         
 
 rule correct_batch:
@@ -53,8 +64,8 @@ rule correct_batch:
         output_prefix="{dataset}",
         output_dir="{software}/output/"
     output:
-        #"{software,^/(?!SIMBA)([a-z0-9]+)$}/output/{dataset}_{software}_embedding.txt"
-        "{software}/output/{dataset}_{software}_embedding.txt"
+        "{software,^/(?!SIMBA)[\w-]*}/output/{dataset}_{software}_embedding.txt"
+        #"{software}/output/{dataset}_{software}_embedding.txt"
     shell:
         "Rscript {wildcards.software}/run_{wildcards.software}.R {input} '{params.output_prefix}' '{params.output_dir}'| tee '{params.output_dir}/{wildcards.dataset}_log'"
        
