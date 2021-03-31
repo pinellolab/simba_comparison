@@ -1,17 +1,15 @@
 
-METRICS=["ARI", "ASW"]
-SOFTWARES=["Raw_nopp", "Raw_PCA", "Seurat3", "Harmony", "LIGER", "SIMBA", "SIMBA-anchor"]
+METRICS=["ARI", "ASW", "LISI_40"]
+SOFTWARES=["Raw", "Raw-pp", "Seurat3", "Harmony", "LIGER", "SIMBA"]
 DATASETS=["murine-atlas", "pancreas"]
-SUFFIXES=["-anchor",""]
+SIMBA_SUFFIXES=[""]
 
-wildcard_constraints:
-    software="Raw_nopp|Raw_PCA|Seurat3|Harmony|LIGER|SIMBA|SIMBA-anchor|SIMBA-anchor-v4"
 
 rule convert_h5ad:
     input:
         "SIMBA_h5ad_paths.txt"
     output:
-        expand("SIMBA{suffix}/output/{dataset}_SIMBA{suffix}_embedding.txt", dataset=DATASETS, suffix=SUFFIXES)
+        expand("SIMBA{suffix}/output/{dataset}_SIMBA{suffix}_embedding.txt", dataset=DATASETS, suffix=SIMBA_SUFFIXES)
     shell:
         "while IFS= read -r LINE;do python ../convert_h5.py $LINE; done < {input}"
 
@@ -94,18 +92,17 @@ rule evaluate_ASW:
 
 rule evaluate_LISI:
     input:
-        expand("{software}/output/{{dataset}}_{software}_{{emb}}.txt", software=SOFTWARES)
+        "{software}/output/{dataset}_{software}_{emb}.txt"
     output:
-        "metrics/{dataset}/LISI_40_{emb}.txt" 
+        "metrics/{dataset}/{software}_LISI_40_{emb}.txt" 
     params:
         output_dir="metrics/{dataset}/",
     shell: 
-        "Rscript metrics/run_LISI.R {input} {params.output_dir} {wildcards.emb}"
+        "Rscript metrics/run_LISI.R {input} {params.output_dir} {wildcards.emb} {wildcards.dataset} {wildcards.software}"
 
 rule collect_metrics_for_method:
     input:
         expand("metrics/{{dataset}}/{{software}}_{metric}_{{emb}}.txt", metric=METRICS),
-        "metrics/{dataset}/LISI_40_{emb}.txt"
     output:
         "metrics/{dataset}/{software}_metrics_collected_{emb}.txt"
     params:

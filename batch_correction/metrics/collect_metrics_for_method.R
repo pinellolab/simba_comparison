@@ -31,9 +31,6 @@ LISI_dat <- LISI_output[LISI_output$methods_use == method_use, c("methods_use", 
 LISI_dat[1, "methods_use"] = "LISI"
 colnames(LISI_dat) <- c("metric", "batch", "celltype")
 
-LISI_norm_dat <- LISI_output[LISI_output$methods_use == method_use, c("methods_use", "iLISI_median_norm", "cLISI_median_norm")]
-LISI_norm_dat[1, "methods_use"] = "LISI_norm"
-colnames(LISI_norm_dat) <- c("metric", "batch", "celltype")
 
-collected_metrics = bind_rows(list(ARI_median, ASW_median, LISI_dat, LISI_norm_dat))
+collected_metrics = bind_rows(list(ARI_median, ASW_median, LISI_dat))
 write.table(collected_metrics, file = paste0(output_dir, "/", method_use, "_metrics_collected_", emb_type, ".txt"), row.names = F, quote = F)

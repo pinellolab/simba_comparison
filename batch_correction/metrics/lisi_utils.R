@@ -52,7 +52,7 @@ get_celltype_common <- function(data_path){
 }
 
 
-run_LISI_final <- function(fn, data_path, save_dir, eval_metric, methods_use, plx=40, emb_type = emb_type){
+run_LISI_final <- function(fn, data_path, save_dir, eval_metric = "LISI", methods_use, plx=40, emb_type = emb_type){
   
   # myPCA <- read.csv(paste0(data_path, fn), head=T, row.names = 1, check.names = FALSE)
   myPCA <- read.table(data_path, head = T, row.names = 1, check.names = FALSE, sep = "\t")
@@ -75,12 +75,10 @@ run_LISI_final <- function(fn, data_path, save_dir, eval_metric, methods_use, pl
   dir.create( paste0(save_dir, '/lisi_tmpdir/') )
   write.table(lisi_batch, paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_batch_',plx,'.txt'), quote=F, sep='\t', row.names=T, col.names=NA)
   write.table(lisi_celltype,paste0(save_dir, '/lisi_tmpdir/', methods_use, '_', eval_metric, '_celltype_',plx,'.txt'), quote=F, sep='\t', row.names=T, col.names=NA)
-  #dir.create(paste0(this_dir,eval_metric,methods_use,'/'), showWarnings = F)
-  #write.table(lisi_batch, file = paste0(save_dir,'/', methods_use, "_", eval_metric, ".txt"), 
-  #                         row.names = T, col.names = T, quote = F, sep = "\t")
   
-  #write.table(lisi_celltype, file = paste0(this_dir,eval_metric,methods_use,'/'), paste0('lisi_celltype_',plx,'.txt'),
-  #                         row.names = T, col.names = T, quote = F, sep = "\t")
+  require(dplyr) 
+  res_df = inner_join(lisi_batch, lisi_celltype, by = "cell")
+  return(res_df)
 }
 
 
