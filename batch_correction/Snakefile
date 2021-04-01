@@ -50,9 +50,16 @@ rule plot_umap_legend:
 rule plot_all:
     input:
         expand("plots/{dataset}_{software}_umap_nolab.pdf", software = SOFTWARES, dataset=DATASETS),
-        expand("plots/{dataset}_SIMBA_umap_wlab.pdf", dataset=DATASETS)
+        expand("plots/{dataset}_SIMBA_umap_wlab.pdf", dataset=DATASETS),
+        expand("plots/{dataset}_metrics_embedding.pdf", dataset=DATASETS)
         
-        
+rule plot_metrics:
+    input:
+        "metrics/{dataset}/metrics_collected_{emb}.txt"
+    output:
+        "plots/{dataset}_metrics_{emb}.pdf"
+    shell:
+        "Rscript plots/plot_metrics.R {input} {output}"
 
 rule correct_batch:
     input:
