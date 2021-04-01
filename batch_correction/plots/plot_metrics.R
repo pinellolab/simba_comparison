@@ -18,7 +18,7 @@ metrics$method = factor(metrics$method, levels = c("Raw", "Raw-pp", "Seurat3", "
 
 p1 <- ggplot(subset(metrics, metric %in% c("ASW")), aes(celltype, batch_sub, col = method, label = method)) + geom_point(size = 3) + theme_classic(base_size = 20) + xlab("ASW cell type") + ylab("1 - ASW batch") + scale_color_manual(values =  cbPalette) + theme(legend.position = "none") + geom_text_repel(force = 50)
 p2 <- ggplot(subset(metrics, metric %in% c("ARI")), aes(celltype, batch_sub, col = method, label = method)) + geom_point(size = 3) + theme_classic(base_size = 20) + xlab("ARI cell type") + ylab("1 - ARI batch") + scale_color_manual(values =  cbPalette) + theme(legend.position = "none") + geom_text_repel(force = 50, force_pull = 0.01)
-p3 <- ggplot(subset(metrics, metric %in% c("LISI")), aes(celltype_sub, batch, col = method, label = method)) + geom_point(size = 3) + theme_classic(base_size = 20) + xlab("1 - cLISI (cell type)") + ylab("iLISI batch") + scale_color_manual(values =  cbPalette) + theme(legend.position = "none") + geom_text_repel()
+p3 <- ggplot(subset(metrics, metric %in% c("LISI_40")), aes(celltype_sub, batch, col = method, label = method)) + geom_point(size = 3) + theme_classic(base_size = 20) + xlab("1 - cLISI (cell type)") + ylab("iLISI batch") + scale_color_manual(values =  cbPalette) + theme(legend.position = "none") + geom_text_repel()
 
 pdf(output_plot_path, height = 5, width = 15)
 cowplot::plot_grid(p1, p2, p3, ncol = 3)

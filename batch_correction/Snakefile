@@ -1,5 +1,5 @@
 
-METRICS=["ARI", "ASW", "LISI_40"]
+METRICS=["ARI", "ASW", "LISI_40", "LISI_30", "LISI_20", "LISI_10", "LISI_50"]
 SOFTWARES=["Raw", "Raw-pp", "Seurat3", "Harmony", "LIGER", "SIMBA"]
 DATASETS=["murine-atlas", "pancreas"]
 SIMBA_SUFFIXES=[""]
@@ -69,7 +69,7 @@ rule correct_batch:
         output_prefix="{dataset}",
         output_dir="{software}/output/"
     output:
-        "{software,^/(?!SIMBA)[\w-]*}/output/{dataset}_{software}_embedding.txt"
+        "{software, (?!SIMBA)([-\w])*}/output/{dataset}_{software}_embedding.txt"
         #"{software}/output/{dataset}_{software}_embedding.txt"
     shell:
         "Rscript {wildcards.software}/run_{wildcards.software}.R {input} '{params.output_prefix}' '{params.output_dir}'| tee '{params.output_dir}/{wildcards.dataset}_log'"
@@ -101,11 +101,11 @@ rule evaluate_LISI:
     input:
         "{software}/output/{dataset}_{software}_{emb}.txt"
     output:
-        "metrics/{dataset}/{software}_LISI_40_{emb}.txt" 
+        "metrics/{dataset}/{software}_LISI_{plx}_{emb}.txt" 
     params:
         output_dir="metrics/{dataset}/",
     shell: 
-        "Rscript metrics/run_LISI.R {input} {params.output_dir} {wildcards.emb} {wildcards.dataset} {wildcards.software}"
+        "Rscript metrics/run_LISI.R {input} {params.output_dir} {wildcards.emb} {wildcards.dataset} {wildcards.software} {wildcards.plx}"
 
 rule collect_metrics_for_method:
     input:

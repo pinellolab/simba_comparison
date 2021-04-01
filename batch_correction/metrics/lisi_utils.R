@@ -15,7 +15,7 @@ normalize_values <- function(myData, colns, min_val=1, max_val=2){
 
 
 get_celltype_common <- function(data_path){
-  myData <- read.csv(data_path, head=T, row.names = 1, check.names = FALSE)
+  myData <- read.table(data_path, head=T, row.names = 1, check.names = FALSE)
   colnames(myData)[grep('[cC]ell_?[tT]ype',colnames(myData))] <- 'cell_type'
   colnames(myData)[grep('([bB]atch)|(BATCH)',colnames(myData))] <- 'batch'
   print(dim(myData))
