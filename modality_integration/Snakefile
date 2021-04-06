@@ -1,10 +1,37 @@
 ruleorder: LIGER_sort_annots > make_promoter_annot
+ruleorder: create_umap > extract_umap_h5ad
 
-METRICS=["Silhouette", "Anchoring_dist_rank", "Anchoring_dist", "Graph_connectivity", "Cluster_agreement", "Anchoring_dist_rank_full"]
+METRICS=["Silhouette", "Anchoring_dist", "Cluster_agreement", "Anchoring_dist_rank_full"]
 #SOFTWARES=["Raw", "Seurat3", "LIGER"]
 SOFTWARES=["Raw","Seurat3", "LIGER", "SIMBA"]
-DATASETS=["pbmc", "mouse-skin", "mouse-skin_subset"]
+PLOT_SOFTWARES=["Raw","Seurat3", "LIGER", "SIMBA"]
+DATASETS=["pbmc", "mouse-skin-subset"] #"mouse-skin"
 
+
+rule convert_h5ad:
+    input:
+        "SIMBA_h5ad_paths.txt"
+    output:
+        expand("SIMBA/{dataset}/integrated_embedding.txt", dataset=DATASETS)
+    shell:
+        "while IFS= read -r LINE;do Rscript convert_h5_matched.R $LINE; done < <(awk 'NR < 5' {input})" 
+
+
+rule extract_umap_h5ad:
+    input:
+        "SIMBA_h5ad_paths.txt"
+    output:
+        expand("{{software,(SIMBA)[\w-]*}}/{dataset}/umap.txt", dataset=DATASETS) 
+    shell:
+        "while IFS= read -r LINE;do python extract_umap_from_h5ad.py $LINE; done < {input};"
+
+#rule link_umap:
+#    input:
+#        "{software}/{dataset}/umap_from_h5ad.txt"
+#    output:
+#        "{software,(SIMBA)[\w-]*}/{dataset}/umap.txt"
+#    shell:
+#        "ln -s umap_from_h5ad.txt {output}"
 
 rule LIGER_sort_fragments:
     input:
@@ -53,6 +80,46 @@ rule create_pca:
     shell:
         "mkdir -p {wildcards.software}_pca; Rscript ../run_pca_on_embedding.R {input} {output}"
 
+rule create_umap:
+    input:
+        "{software}/{dataset}/integrated_embedding.txt"
+    output:
+        "{software, (?!SIMBA)[\w-]+}/{dataset}/umap.txt"
+    run:
+        if not wildcards.software in ["SIMBA", "SIMBA-test"]:
+            shell("Rscript run_umap_on_embedding.R {input} {output}")
+
+rule plot_umap:
+    input:
+        "{software}/{dataset}/umap.txt"
+    output:
+        "plots/{dataset}_{software}_umap_nolab.pdf"
+    shell:
+        "mkdir -p plots/; Rscript plots/plot_umap.R {input} {output} {wildcards.dataset}"
+
+rule plot_umap_labels:
+    input:
+        "{software}/{dataset}/umap.txt"
+    output:
+        "plots/{dataset}_{software}_umap_wlab.pdf"
+    shell:
+        "mkdir -p plots/; Rscript plots/plot_umap.R {input} {output} {wildcards.dataset} TRUE"
+
+rule plot_metrics:
+    input:
+        "metrics/metrics_collected_{dataset}.txt"
+    output:
+        "plots/metric_plot_{dataset}.pdf"
+    shell:
+        "Rscript plots/plot_metrics.R {input} {output}"
+
+rule plot_all:
+    input:
+        expand("plots/{dataset}_{software}_umap_nolab.pdf", software = PLOT_SOFTWARES, dataset=DATASETS),
+        expand("plots/{dataset}_Raw_umap_wlab.pdf", dataset=DATASETS),
+        expand("plots/metric_plot_{dataset}.pdf", dataset=DATASETS)
+
+
 rule get_common_cells:
     input:
         expand("{software}/{{dataset}}/integrated_embedding.txt", software=SOFTWARES)
@@ -71,7 +138,7 @@ rule evaluate_metric_each:
         output_dir="{software}/{dataset}/",
         threads=20
     shell:
-        "Rscript metrics/get_metric_each.R {wildcards.metric} {input} {params.output_dir} {params.threads}"
+        "Rscript metrics/get_metric_each.R {wildcards.metric} {input} {wildcards.software} {params.output_dir} {params.threads}"
     
 
 rule collect_metrics_each:
