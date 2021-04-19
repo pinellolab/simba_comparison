@@ -11,11 +11,50 @@
 # Input: myData: 20 PCs and batch, celltype columns
 # cpcs: vector containing column number of PCs in myData
 
-ari_calcul_sampled <- function(myData, cpcs, isOptimal=FALSE, 
+cosine_dist = function(embedding){
+    Matrix <- as.matrix(embedding)
+    sim <- Matrix / sqrt(rowSums(Matrix * Matrix))
+    sim <- sim %*% t(sim)
+    D_sim <- as.dist(1 - sim)
+    return(D_sim)
+}
+
+get_n_clusters <- function(embedding, nClusters, max_steps = 20, dissim = "Euclidean"){
+    require(Seurat)
+    if (dissim == "Euclidean"){
+        nn_graph = FindNeighbors(embedding)
+    } else if (dissim == "cosine"){
+        dist_mat = cosine_dist(embedding)
+        nn_graph = FindNeighbors(object = dist_mat)
+    } else{
+        stop("Not a valid metric")
+    }
+    steps = 0
+    current_min = 0
+    current_max = 3
+    while(steps < max_steps){
+        print(paste0('step ', steps))
+        current_resolution = current_min + ((current_max - current_min)/2)
+        clusters = FindClusters(nn_graph$snn, resolution = current_resolution)[,1]
+        current_n = length(unique(clusters))
+        #print(paste0("got ", current_n, " at resolution ", current_resolution))
+        if (current_n > nClusters) current_max = current_resolution
+        else if (current_n < nClusters) current_min = current_resolution
+        else{return(clusters)}
+        steps = steps + 1
+    }
+    print("Cannot find the number of clusters")
+    print(paste0("Clustering solution from last iteration is used:", current_n, " at resolution ", current_resolution))
+    return(clusters)
+}
+
+
+
+ari_calcul_sampled <- function(myData, cpcs, 
                                method_use='resnet',
                                base_name='', maxiter=30, 
 					           celltypelb='celltype', batchlb='batch', 
-                              emb_type = emb_type )
+                              emb_type = emb_type, dissim = c('Euclidean', 'cosine'))
 {
   library(NbClust)
   library(mclust)
@@ -56,16 +95,9 @@ ari_calcul_sampled <- function(myData, cpcs, isOptimal=FALSE,
     # Clustering
     ###############################
     
-    if(!isOptimal){  # isOptimal==FALSE
-      # nbct : k equal number of unique cell types in the dataset
-      clustering_result <- kmeans(x = myPCAExt[,cpcs], centers=nbct, iter.max = maxiter)
-      myPCAExt$clusterlb <- clustering_result$cluster
+    clustering_result <- get_n_clusters(embedding = myPCAExt[,cpcs], nClusters = nbct, dissim = dissim)
+    myPCAExt$clusterlb <- clustering_result
       
-    } else if(isOptimal){
-      nbclust_result<-NbClust(data=myPCAExt[,cpcs], method = "kmeans", 
-	                          min.nc = max(nbct-2, 2), max.nc = nbct+4)
-      myPCAExt$clusterlb <-nbclust_result$Best.partition	  
-    }
     
 	# assign the current myPCAExt to a unique object so that it can be stored later 
     assign(paste0("myPCAExt",i), myPCAExt)
@@ -133,7 +165,7 @@ ari_calcul_sampled <- function(myData, cpcs, isOptimal=FALSE,
                       "ari_celltype"=total_ari_celltype)
   
   # write final dataframe to a text file
-  write.table(myARI, file = paste0(base_name,method_use,"_ARI_", emb_type, ".txt"), row.names = FALSE, col.names = TRUE, quote = FALSE, sep="\t")
+  write.table(myARI, file = paste0(base_name,method_use,"_ARI_", emb_type, "_", dissim, ".txt"), row.names = FALSE, col.names = TRUE, quote = FALSE, sep="\t")
   
   print('Save output in folder')
   print(base_name)
