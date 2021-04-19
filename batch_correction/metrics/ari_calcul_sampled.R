@@ -33,14 +33,15 @@ get_n_clusters <- function(embedding, nClusters, max_steps = 20, dissim = "eucli
     current_min = 0
     current_max = 3
     while(steps < max_steps){
-        print(paste0('step ', steps))
         current_resolution = current_min + ((current_max - current_min)/2)
-        clusters = FindClusters(nn_graph$snn, resolution = current_resolution)[,1]
+        clusters = FindClusters(nn_graph$snn, resolution = current_resolution, verbose = FALSE)[,1]
         current_n = length(unique(clusters))
         #print(paste0("got ", current_n, " at resolution ", current_resolution))
         if (current_n > nClusters) current_max = current_resolution
         else if (current_n < nClusters) current_min = current_resolution
-        else{return(clusters)}
+        else{
+            print(paste0("Got ", current_n, " at resolution ", current_resolution))
+            return(clusters)}
         steps = steps + 1
     }
     print("Cannot find the number of clusters")
@@ -101,15 +102,10 @@ ari_calcul_sampled <- function(myData, cpcs,
     
 	# assign the current myPCAExt to a unique object so that it can be stored later 
     assign(paste0("myPCAExt",i), myPCAExt)
-    print('Nb clusters: ')
-    print(length(unique(myPCAExt$clusterlb)))
-    
 	
     # Following clustering, get list of common cell types
     mySample <- subset(myPCAExt,select=c(celltypelb, batchlb))
-    print(unique(mySample[,celltypelb]))
     batches <- unique(mySample[,batchlb])
-    print(batches)
     
     ctls <- list()
     count <- 0
@@ -130,7 +126,6 @@ ari_calcul_sampled <- function(myData, cpcs,
 	# ct_common: common cell types amongst all batches
     
     cells_common <- rownames(mySample)[which(mySample[,celltypelb] %in% ct_common)]
-    print(paste("Number of common cells:", length(cells_common)), quote = F)
     
     # create dataset with only common cells
     smallData <- myPCAExt[cells_common,]

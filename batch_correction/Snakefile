@@ -1,6 +1,8 @@
 
-METRICS=["ARI", "ASW", "LISI_40", "LISI_30", "LISI_20", "LISI_10", "LISI_50"]
+METRICS=["ARI", "ASW", "LISI_40"]
 SOFTWARES=["Raw", "Raw-pp", "Seurat3", "Harmony", "LIGER", "SIMBA"]
+SOFTWARES_Euc = ["Raw", "Raw-pp", "Seurat3", "Harmony", "LIGER"]
+SOFTWARES_cos = ["SIMBA"]
 DATASETS=["murine-atlas", "pancreas"]
 SIMBA_SUFFIXES=[""]
 
@@ -81,45 +83,46 @@ rule evaluate_ARI:
     input:
         "{software}/output/{dataset}_{software}_{emb}.txt"
     output:
-        "metrics/{dataset}/{software}_ARI_{emb}.txt"
+        "metrics/{dataset}/{software}_ARI_{emb}_{sim}.txt"
     params:
         output_dir="metrics/{dataset}/",
     shell:
-        "Rscript metrics/run_ARISampled.R {wildcards.software} {input} '{params.output_dir}' {wildcards.emb}"
+        "Rscript metrics/run_ARISampled.R {wildcards.software} {input} '{params.output_dir}' {wildcards.emb} {wildcards.sim}"
 
 rule evaluate_ASW:
     input:
         "{software}/output/{dataset}_{software}_{emb}.txt"
     output:
-        "metrics/{dataset}/{software}_ASW_{emb}.txt"
+        "metrics/{dataset}/{software}_ASW_{emb}_{sim}.txt"
     params:
         output_dir="metrics/{dataset}/",
     shell:
-        "python metrics/run_ASW.py {wildcards.software} {input} {params.output_dir} {wildcards.emb}"
+        "python metrics/run_ASW.py {wildcards.software} {input} {params.output_dir} {wildcards.emb} {wildcards.sim}"
 
 rule evaluate_LISI:
     input:
         "{software}/output/{dataset}_{software}_{emb}.txt"
     output:
-        "metrics/{dataset}/{software}_LISI_{plx}_{emb}.txt" 
+        "metrics/{dataset}/{software}_LISI_{plx}_{emb}_{sim}.txt" 
     params:
         output_dir="metrics/{dataset}/",
     shell: 
-        "Rscript metrics/run_LISI.R {input} {params.output_dir} {wildcards.emb} {wildcards.dataset} {wildcards.software} {wildcards.plx}"
+        "Rscript metrics/run_LISI.R {input} {params.output_dir} {wildcards.emb} {wildcards.dataset} {wildcards.software} {wildcards.plx} {wildcards.sim}"
 
 rule collect_metrics_for_method:
     input:
-        expand("metrics/{{dataset}}/{{software}}_{metric}_{{emb}}.txt", metric=METRICS),
+        expand("metrics/{{dataset}}/{{software}}_{metric}_{{emb}}_{{sim}}.txt", metric=METRICS),
     output:
-        "metrics/{dataset}/{software}_metrics_collected_{emb}.txt"
+        "metrics/{dataset}/{software}_metrics_collected_{emb}_{sim}.txt"
     params:
         output_dir="metrics/{dataset}/"
     shell:
-        "Rscript metrics/collect_metrics_for_method.R {wildcards.software} {input} {params.output_dir} {wildcards.emb}"
+        "Rscript metrics/collect_metrics_for_method.R {wildcards.software} {input} {params.output_dir} {wildcards.emb} {wildcards.sim}"
 
 rule collect_metrics:
     input: 
-        expand("metrics/{{dataset}}/{software}_metrics_collected_{{emb}}.txt", software=SOFTWARES)
+        expand("metrics/{{dataset}}/{software}_metrics_collected_{{emb}}_euclidean.txt", software=SOFTWARES_Euc), 
+        expand("metrics/{{dataset}}/{software}_metrics_collected_{{emb}}_cosine.txt", software=SOFTWARES_cos)
     output:
         "metrics/{dataset}/metrics_collected_{emb}.txt"
     params:

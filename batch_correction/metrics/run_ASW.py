@@ -12,7 +12,7 @@ import random
 from sklearn.metrics import silhouette_score
 
 # asw_batch_norm_sub = 1 - asw_batch_norm
-def silhouette_coeff_ASW(adata, method_use='raw',save_dir='', save_fn='', percent_extract=0.8):
+def silhouette_coeff_ASW(adata, method_use='raw',save_dir='', save_fn='', percent_extract=0.8, metric = "euclidean"):
     random.seed(0)
     asw_b = []
     asw_b_sub = []
@@ -23,8 +23,8 @@ def silhouette_coeff_ASW(adata, method_use='raw',save_dir='', save_fn='', percen
         rand_cidx = np.random.choice(adata.obs_names, size=int(len(adata.obs_names) * percent_extract), replace=False)
 #         print('nb extracted cells: ',len(rand_cidx))
         adata_ext = adata[rand_cidx,:]
-        asw_batch = silhouette_score(adata_ext.X, adata_ext.obs['batch'])
-        asw_celltype = silhouette_score(adata_ext.X, adata_ext.obs['cell_type'])
+        asw_batch = silhouette_score(adata_ext.X, adata_ext.obs['batch'], metric = metric)
+        asw_celltype = silhouette_score(adata_ext.X, adata_ext.obs['cell_type'], metric = metric)
         
         asw_b.append(asw_batch)
         asw_b_sub.append(1-asw_batch)
@@ -68,6 +68,7 @@ method_use = sys.argv[1]
 pca_file = sys.argv[2]
 save_dir = sys.argv[3]
 emb_type = sys.argv[4]
+dissim_metric = sys.argv[5]
 print("Saving to ", save_dir)
 
 #if not os.path.exists(save_dir+'/ASW/'): os.makedirs(os.path.join(save_dir,'/ASW/')) 
@@ -79,10 +80,11 @@ print("Saving to ", save_dir)
 def main(f = pca_file):
     #final_ls = []
     print('Extract asw for ', method_use)
-    save_fn = method_use + '_ASW_' + emb_type
+    save_fn = method_use + '_ASW_' + emb_type + '_' + dissim_metric
     adata = createAnnData(f)
     asw_val = silhouette_coeff_ASW(adata, method_use, save_dir, 
-                                          save_fn, percent_extract=0.8)
+                                          save_fn, percent_extract=0.8, 
+                                          metric = dissim_metric)
     #final_ls.append(asw_val)
     
 

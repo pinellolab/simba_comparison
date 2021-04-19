@@ -5,9 +5,10 @@ nArgs = length(args)
 method_use = args[1]
 ARI_output_path = args[2]
 ASW_output_path = args[3]
-LISI_output_paths = args[4:(nArgs-2)]
-output_dir = args[nArgs-1]
-emb_type = args[nArgs]
+LISI_output_paths = args[4:(nArgs-3)]
+output_dir = args[nArgs-2]
+emb_type = args[nArgs-1]
+dissim_metric = args[nArgs]
 
 if ( ! grepl("ARI", ARI_output_path) ) stop(paste0("First input not ARI:", ARI_output_path))
 if ( ! grepl("ASW", ASW_output_path) ) stop("Second input not ASW")
@@ -33,4 +34,4 @@ for (LISI_output_path in LISI_output_paths){
     collected_metrics = bind_rows(list(collected_metrics, LISI_dat))
 }
 
-write.table(collected_metrics, file = paste0(output_dir, "/", method_use, "_metrics_collected_", emb_type, ".txt"), row.names = F, quote = F)
+write.table(collected_metrics, file = paste0(output_dir, "/", method_use, "_metrics_collected_", emb_type, "_", dissim_metric, ".txt"), row.names = F, quote = F)
