@@ -19,9 +19,9 @@ cosine_dist = function(embedding){
     return(D_sim)
 }
 
-get_n_clusters <- function(embedding, nClusters, max_steps = 20, dissim = "Euclidean"){
+get_n_clusters <- function(embedding, nClusters, max_steps = 20, dissim = "euclidean"){
     require(Seurat)
-    if (dissim == "Euclidean"){
+    if (dissim == "euclidean"){
         nn_graph = FindNeighbors(embedding)
     } else if (dissim == "cosine"){
         dist_mat = cosine_dist(embedding)
@@ -54,7 +54,7 @@ ari_calcul_sampled <- function(myData, cpcs,
                                method_use='resnet',
                                base_name='', maxiter=30, 
 					           celltypelb='celltype', batchlb='batch', 
-                              emb_type = emb_type, dissim = c('Euclidean', 'cosine'))
+                              emb_type = emb_type, dissim = c('euclidean', 'cosine'))
 {
   library(NbClust)
   library(mclust)
