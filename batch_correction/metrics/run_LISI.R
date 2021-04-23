@@ -26,13 +26,13 @@ eval_metric = "LISI"
 lisi.df = run_LISI_final('', pca_file, output_dir, eval_metric, method_use, plx, emb_type = emb_type, dissim = dissim)
 
 shared_celltype_cells <- get_celltype_common(pca_file)$cells_common
-cLISI_common = lisi.df$cell_type[which(lisi.df$cell %in% shared_celltype_cells)]
+lisi.df = lisi.df[which(lisi.df$cell %in% shared_celltype_cells),]
 
 # Get summary metrics (median)
 outfile = paste0(output_dir, "/", method_use, "_LISI_", plx, "_", emb_type, "_", dissim, ".txt")
 res.df = data.frame(methods_use = method_use, 
                     iLISI_median = median(lisi.df$batch),
-                    cLISI_median = median(cLISI_common), 
+                    cLISI_median = median(lisi.df$cell_type), 
                     plx = plx)
 write.table(res.df, file = outfile, quote = F, col.names = T, row.names = F, sep = " ")
 print("Done producing LISI")

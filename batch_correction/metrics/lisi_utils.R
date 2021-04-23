@@ -18,7 +18,6 @@ get_celltype_common <- function(data_path){
   myData <- read.table(data_path, head=T, row.names = 1, check.names = FALSE, sep = "\t")
   colnames(myData)[grep('[cC]ell_?[tT]ype',colnames(myData))] <- 'cell_type'
   colnames(myData)[grep('([bB]atch)|(BATCH)',colnames(myData))] <- 'batch'
-  print(dim(myData))
   batches <- unique(myData$batch)
   celltypels <- unique(myData$cell_type)
   #print(celltypels)
@@ -92,7 +91,11 @@ run_LISI_final <- function(fn, data_path, save_dir, eval_metric = "LISI", method
   
   lisi_res <- compute_lisi_annoy(lisi_embeddings, lisi_meta_data, lisi_label, perplexity = plx, metric = dissim)
   lisi_res$cell <- rownames(lisi_embeddings)
-  
+    
+  shared_celltype_cells <- get_celltype_common(pca_file)$cells_common
+  print(paste0(length(shared_celltype_cells), " shared cells"))
+  lisi_res = lisi_res[which(lisi_res$cell %in% shared_celltype_cells),]
+
   lisi_batch <- subset(lisi_res,select=c('batch','cell'))
   lisi_celltype <- subset(lisi_res,select=c('cell_type','cell'))
   
