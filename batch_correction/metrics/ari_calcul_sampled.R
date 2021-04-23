@@ -19,7 +19,7 @@ cosine_dist = function(embedding){
     return(D_sim)
 }
 
-get_n_clusters <- function(embedding, nClusters, max_steps = 20, dissim = "euclidean"){
+get_Louvain_clusters <- function(embedding, nClusters, max_steps = 100, dissim = "euclidean"){
     require(Seurat)
     if (dissim == "euclidean"){
         nn_graph = FindNeighbors(embedding)
@@ -49,13 +49,28 @@ get_n_clusters <- function(embedding, nClusters, max_steps = 20, dissim = "eucli
     return(clusters)
 }
 
+get_kmeans_clusters <- function(embedding, nClusters, max_steps = 100, dissim = "euclidean"){
+    if (dissim != "euclidean"){
+        print(paste0("For kmeans clustering method ", dissim, " distance not implemented"))
+        stop()
+    }
+    clustering_result <- kmeans(x = embedding, centers=nClusters, iter.max = max_steps)
+    return(clustering_result$cluster)
+}
+
+get_clusters <- function(embedding, nClusters, max_steps = 100, dissim = "euclidean", clustering_method = c("Louvain", "kmeans")){
+    fn = switch(clustering_method, 
+           "Louvain" = get_Louvain_clusters, 
+           "kmeans" = get_kmeans_clusters)
+    return(fn(embedding, nClusters, max_steps, dissim))
+}
 
 
 ari_calcul_sampled <- function(myData, cpcs, 
                                method_use='resnet',
-                               base_name='', maxiter=30, 
+                               base_name='', nbiters=30, 
 					           celltypelb='celltype', batchlb='batch', 
-                              emb_type = emb_type, dissim = c('euclidean', 'cosine'))
+                              emb_type = emb_type, dissim = c('euclidean', 'cosine'), clustering_method = c("kmeans", "Louvain"))
 {
   library(NbClust)
   library(mclust)
@@ -68,7 +83,7 @@ ari_calcul_sampled <- function(myData, cpcs,
   ce_types<-unique(myData[,celltypelb])
   
   # run function 20 times, each time extract 80% of data
-  nbiters <- 20
+  nbiters <- nbiters
   percent_extract <- 0.8
   
   it <- c()
@@ -96,7 +111,7 @@ ari_calcul_sampled <- function(myData, cpcs,
     # Clustering
     ###############################
     
-    clustering_result <- get_n_clusters(embedding = myPCAExt[,cpcs], nClusters = nbct, dissim = dissim)
+    clustering_result <- get_clusters(embedding = myPCAExt[,cpcs], nClusters = nbct, dissim = dissim, clustering_method = clustering_method)
     myPCAExt$clusterlb <- clustering_result
       
     

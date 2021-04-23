@@ -37,7 +37,7 @@ dissim = args[5]
 #'
 #' @param fn '_pca.csv' file
 
-run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use, emb_type = emb_type, dissim = dissim){
+run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use, nbiters,  emb_type = emb_type, dissim = dissim, clustering_method){
 
   thisData <- read.table(pca_file, sep = "\t", head = T, row.names = 1)
 
@@ -50,12 +50,14 @@ run_ARISampled <- function(pca_file, out_dir, eval_metric, method_use, emb_type 
   setwd(out_dir)
   temp<-ari_calcul_sampled(myData=thisData, cpcs=colPCA,
                            method_use = method_use,
-                           base_name='', emb_type = emb_type, dissim = dissim)
+                           nbiters = nbiters,
+                           base_name='', emb_type = emb_type, dissim = dissim, 
+                           clustering_method = clustering_method)
   return(temp)
 }
 
 
-res <-run_ARISampled(pca_filename, out_dir, eval_metric, method_use, emb_type = emb_type, dissim = dissim)
+res <-run_ARISampled(pca_filename, out_dir, eval_metric, method_use, nbiters = 20, emb_type = emb_type, dissim = dissim, clustering_method = "kmeans")
 
 ##############################
 ############ Extracting all data from all methods in dataset 
