@@ -205,7 +205,7 @@ get_n_clusters <- function(embedding, nClusters, max_steps = 20, dissim){
 calculate_ARI <- function(embedding, cell_identity, nClusters = 20, 
                           dissim = c("Euclidean", "dot product")){
     require(Seurat)
-    clusters = get_n_clusters(embedding, nClusters = 20, dissim = dissim) #res = 0.8 by default
+    clusters = get_n_clusters(embedding, nClusters = nClusters, dissim = dissim) #res = 0.8 by default
     in_same_celltype = sapply(levels(cell_identity), function(lvl){
                           cell_types = clusters[which(cell_identity == lvl)]
                           if( length(cell_types) != 2) {print(lvl); stop()}

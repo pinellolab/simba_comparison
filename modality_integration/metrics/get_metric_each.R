@@ -17,6 +17,7 @@ embedding = read.table(embedding_file)
 embedding = embedding[cells_use, ]
 nDims = ncol(embedding)-2
 cell_identity = factor(embedding$batch)
+nCellType = length(unique(embedding$cell_type))
 embedding = embedding[,1:nDims]
 nCells = length(cell_identity)/2
 
@@ -36,7 +37,7 @@ if (metric == "Silhouette") {
 } else if (metric == "Anchoring_dist") {
     res = calculate_anchoring_dist(embedding, cell_identity, summary_stat = identity, dissim = dissim)
 }  else if (metric == "Cluster_agreement") {
-    res = calculate_ARI(embedding, cell_identity, dissim = dissim)
+    res = calculate_ARI(embedding, cell_identity, nCellType, dissim = dissim)
 }  else if (metric == "Anchoring_dist_rank_full") {
    res = calculate_self_dist_rank_all(embedding, cell_identity, modality = modality, threads = nThreads, dissim = dissim)
 } 
