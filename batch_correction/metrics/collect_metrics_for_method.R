@@ -28,7 +28,7 @@ colnames(ASW_median) <- c("metric", "batch", "celltype")
 collected_metrics = bind_rows(list(ARI_median, ASW_median))
 for (LISI_output_path in LISI_output_paths){
     LISI_output <- read.table(LISI_output_path, head = T, stringsAsFactors = F)
-    LISI_dat <- LISI_output[LISI_output$methods_use == method_use, c("methods_use", "iLISI_median", "cLISI_median")]
+    LISI_dat <- LISI_output[LISI_output$methods_use == method_use, c("methods_use", "iLISI_mean", "cLISI_mean")]
     LISI_dat[1, "methods_use"] = paste0("LISI_", LISI_output$plx[1])
     colnames(LISI_dat) <- c("metric", "batch", "celltype")
     collected_metrics = bind_rows(list(collected_metrics, LISI_dat))
