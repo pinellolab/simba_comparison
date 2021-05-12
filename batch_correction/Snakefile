@@ -1,8 +1,9 @@
 
 METRICS=["ARI", "ASW", "LISI_40"]
 SOFTWARES=["Raw", "Raw-pp", "Seurat3", "Harmony", "LIGER", "SIMBA"]
-SOFTWARES_Euc = ["Raw", "Raw-pp", "Seurat3", "Harmony", "LIGER"]
-SOFTWARES_cos = ["SIMBA"]
+SOFTWARES_run_bc = ["Raw", "Raw-pp", "Seurat3", "Harmony", "LIGER"]
+SOFTWARES_Euc = ["Raw", "Raw-pp", "Seurat3", "Harmony", "LIGER", "SIMBA"]
+SOFTWARES_cos = []
 DATASETS=["murine-atlas", "pancreas"]
 SIMBA_SUFFIXES=[""]
 
@@ -11,7 +12,8 @@ rule convert_h5ad:
     input:
         "SIMBA_h5ad_paths.txt"
     output:
-        expand("SIMBA{suffix}/output/{dataset}_SIMBA{suffix}_embedding.txt", dataset=DATASETS, suffix=SIMBA_SUFFIXES)
+        expand("SIMBA{suffix}/output/{dataset}_SIMBA{suffix}_embedding_D50.txt", dataset=DATASETS, suffix=SIMBA_SUFFIXES),
+        expand("SIMBA{suffix}/output/{dataset}_SIMBA{suffix}_umap_D50.txt", dataset=DATASETS, suffix=SIMBA_SUFFIXES)
     shell:
         "while IFS= read -r LINE;do python ../convert_h5.py $LINE; done < {input}"
 
@@ -25,43 +27,48 @@ rule create_pca:
 
 rule create_umap:
     input:
-        "{software}/output/{dataset}_{software}_embedding.txt"
+        "{software, (?!SIMBA)([-\w])*}/output/{dataset}_{software}_embedding_D{d}.txt"
     output:
-        "{software}/output/{dataset}_{software}_umap.txt"
+        "{software}/output/{dataset}_{software}_umap_D{d}.txt"
     shell:
-        "Rscript ../run_umap_on_embedding.R {input} {output}"
+        "Rscript run_umap_on_embedding.R {input} {output}"
 
 rule plot_umap:
     input:
-        "{software}/output/{dataset}_{software}_umap.txt"
+        "{software}/output/{dataset}_{software}_umap_D{d}.txt"
     output:
-        "plots/{dataset}_{software}_umap_nolab.pdf"
+        "plots/{dataset}_{software}_umap_nolab_D{d}.pdf"
     shell:
         "mkdir -p plots/; Rscript plots/plot_umap.R {input} {output} {wildcards.dataset}"
 
 
 rule plot_umap_legend:
     input:
-        "{software}/output/{dataset}_{software}_umap.txt"
+        "{software}/output/{dataset}_{software}_umap_D{d}.txt"
     output:
-        "plots/{dataset}_{software}_umap_wlab.pdf"
+        "plots/{dataset}_{software}_umap_wlab_D{d}.pdf"
     shell:
         "mkdir -p plots/; Rscript plots/plot_umap.R {input} {output} {wildcards.dataset} TRUE"
 
 
 rule plot_all:
     input:
-        expand("plots/{dataset}_{software}_umap_nolab.pdf", software = SOFTWARES, dataset=DATASETS),
-        expand("plots/{dataset}_SIMBA_umap_wlab.pdf", dataset=DATASETS),
-        expand("plots/{dataset}_metrics_embedding.pdf", dataset=DATASETS)
+        expand("plots/{dataset}_{software}_umap_nolab_D50.pdf", software = SOFTWARES, dataset=DATASETS),
+        expand("plots/{dataset}_SIMBA_umap_wlab_D50.pdf", dataset=DATASETS),
+        expand("plots/{dataset}_metrics_embedding_D50.pdf", dataset=DATASETS)
+        
         
 rule plot_metrics:
     input:
         "metrics/{dataset}/metrics_collected_{emb}.txt"
     output:
-        "plots/{dataset}_metrics_{emb}.pdf"
+        "plots/{dataset}_metrics_{emb}_D{d}.pdf"
     shell:
         "Rscript plots/plot_metrics.R {input} {output}"
+
+rule plot_metrics_all:
+    input:
+        expand("plots/{dataset}_metrics_embedding.pdf", dataset=DATASETS)
 
 rule correct_batch:
     input:
@@ -69,19 +76,25 @@ rule correct_batch:
         "data/{dataset}/{dataset}_metadata.txt.gz",
     params:
         output_prefix="{dataset}",
-        output_dir="{software}/output/"
+        output_dir="{software}/output/",
+        d=50
     output:
-        "{software, (?!SIMBA)([-\w])*}/output/{dataset}_{software}_embedding.txt"
+        "{software, (?!SIMBA)([-\w])*}/output/{dataset}_{software}_embedding_D50.txt"
         #"{software}/output/{dataset}_{software}_embedding.txt"
     shell:
-        "Rscript {wildcards.software}/run_{wildcards.software}.R {input} '{params.output_prefix}' '{params.output_dir}'| tee '{params.output_dir}/{wildcards.dataset}_log'"
-       
+        "Rscript {wildcards.software}/run_{wildcards.software}.R {input} {params.output_prefix} {params.output_dir} {params.d}| tee '{params.output_dir}/{wildcards.dataset}_D{params.d}.log'"
+
+    
+rule run_batch_correction:
+    input:
+         expand("{software}/output/{dataset}_{software}_embedding.txt", software=SOFTWARES_run_bc, dataset = DATASETS)
+
 #nPC_ft=lambda wildcards: 50 if wildcards.software == "SIMBA" else 20
 #nPC_ft = 20
 
 rule evaluate_ARI:
     input:
-        "{software}/output/{dataset}_{software}_{emb}.txt"
+        "{software}/output/{dataset}_{software}_{emb}_D50.txt"
     output:
         "metrics/{dataset}/{software}_ARI_{emb}_{sim}.txt"
     params:
@@ -91,7 +104,7 @@ rule evaluate_ARI:
 
 rule evaluate_ASW:
     input:
-        "{software}/output/{dataset}_{software}_{emb}.txt"
+        "{software}/output/{dataset}_{software}_{emb}_D50.txt"
     output:
         "metrics/{dataset}/{software}_ASW_{emb}_{sim}.txt"
     params:
@@ -101,7 +114,7 @@ rule evaluate_ASW:
 
 rule evaluate_LISI:
     input:
-        "{software}/output/{dataset}_{software}_{emb}.txt"
+        "{software}/output/{dataset}_{software}_{emb}_D50.txt"
     output:
         "metrics/{dataset}/{software}_LISI_{plx}_{emb}_{sim}.txt" 
     params:
@@ -109,9 +122,28 @@ rule evaluate_LISI:
     shell: 
         "Rscript metrics/run_LISI.R {input} {params.output_dir} {wildcards.emb} {wildcards.dataset} {wildcards.software} {wildcards.plx} {wildcards.sim}"
 
+rule evaluate_kBET:
+    input:
+        "{software}/output/{dataset}_{software}_{emb}_D50.txt"
+    output:
+        "metrics/{dataset}/{software}_kBET_{emb}_{sim}.txt"
+    params: 
+        output_dir="metrics/{dataset}/",
+    shell:
+       "Rscript metrics/run_kBET.R {input} {params.output_dir} {wildcards.emb} {wildcards.dataset} {wildcards.software} {wildcards.plx} {wildcards.sim}"
+
+rule calculate_metrics_ma:
+    input:
+        expand("metrics/murine-atlas/{software}_{metric}_embedding_euclidean.txt", metric=METRICS, software = SOFTWARES)
+
+
+rule calculate_metrics_pa:
+    input:
+        expand("metrics/pancreas/{software}_{metric}_embedding_euclidean.txt", metric=METRICS, software = SOFTWARES)
+
 rule collect_metrics_for_method:
     input:
-        expand("metrics/{{dataset}}/{{software}}_{metric}_{{emb}}_{{sim}}.txt", metric=METRICS),
+        expand("metrics/{{dataset}}/{{software}}_{metric}_{{emb}}_{{sim}}.txt", metric=METRICS)
     output:
         "metrics/{dataset}/{software}_metrics_collected_{emb}_{sim}.txt"
     params:
