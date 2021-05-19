@@ -16,6 +16,7 @@ require(ggplot2)
 pal_batch = c('#4c72b0', '#dd8452')
 
 tbl$cell_type = factor(tbl$cell_type)
+if (length(tbl$modality) == 0){tbl$modality = sapply(rownames(tbl), function(s) strsplit(s, split = ".", fixed = TRUE)[[1]][1])}
 tbl$modality = factor(tbl$modality)
 
 print(str(tbl$modality))
@@ -25,7 +26,7 @@ p2 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "cell_ty
 
 if (palette == "mouse-skin" || palette == "mouse-skin-subset"){
     #palette_celltype={'TAC-1':'#F8D856', 'TAC-2':'#F1B044', 'IRS':'#779ba1',               'Medulla':'#897a74','Hair Shaft-cuticle.cortex':"#d6a780"}
-    pal = c('#F8D856', '#F1B044', '#779ba1', '#897a74', "#d6a780")
+    pal = c('#F8D856', '#F1B044', '#C37777', '#897a74', "#d6a780")
 
     tbl$cell_type = factor(tbl$cell_type, levels = c("TAC-1", "TAC-2", "IRS", "Medulla", "Hair_Shaft-cuticle.cortex"))
     p2 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "cell_type", raster = TRUE)
@@ -41,7 +42,7 @@ if (! labels) {
     p2 = p2 + theme(legend.position = "none")
 }
 
-pdf(output_file, width = 10, height = 5)
+pdf(output_file, width = 10, height = 5, useDingbats = FALSE)
 
 cowplot::plot_grid(p1, p2)
 dev.off()
