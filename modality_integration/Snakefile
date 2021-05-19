@@ -3,7 +3,7 @@ ruleorder: create_umap > extract_umap_h5ad
 
 METRICS=["Silhouette", "Anchoring_dist", "Cluster_agreement", "Anchoring_dist_rank_full"]
 #SOFTWARES=["Raw", "Seurat3", "LIGER"]
-SOFTWARES=["Raw","Seurat3", "LIGER", "SIMBA"]
+SOFTWARES=["Raw","Seurat3", "LIGER", "Harmony", "SIMBA"]
 PLOT_SOFTWARES=["Raw","Seurat3", "LIGER", "SIMBA"]
 DATASETS=["pbmc", "mouse-skin-subset"] #"mouse-skin"
 
@@ -78,7 +78,7 @@ rule create_pca:
     output:
         "{software}_pca/{dataset}/integrated_embedding.txt"
     shell:
-        "mkdir -p {wildcards.software}_pca; Rscript ../run_pca_on_embedding.R {input} {output}"
+        "mkdir -p {wildcards.software}_pca; Rscript run_pca_on_embedding.R {input} {output}"
 
 rule create_umap:
     input:

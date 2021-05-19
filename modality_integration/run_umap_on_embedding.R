@@ -22,4 +22,5 @@ stopifnot(length(bid) == 1)
 
 out.df$cell_type = tbl[,cid]
 out.df$batch = tbl[,bid]
+out.df$modality = sapply(rownames(tbl), function(s) strsplit(s, split = ".", fixed = TRUE)[[1]][1])
 write.table(file = output_file, out.df, quote = F, sep = "\t", row.names= T, col.names = T)

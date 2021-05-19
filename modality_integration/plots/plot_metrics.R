@@ -7,11 +7,13 @@ args = commandArgs(trailingOnly = TRUE)
 metric_file = args[1]
 output_pdf = args[2]
 
+methods_use = c("Raw", "Seurat3", "LIGER", "SIMBA")
 cbPalette <- c("#999999",  "#D55E00","#009E73", "#0072B2","#E69F00", "#56B4E9", "#F0E442", "#CC79A7")
 res = read.table(metric_file)
 
 colnames(res)[6] <- "method"
-res$method <- factor(res$method, levels = c("Raw", "Seurat3", "LIGER", "SIMBA"))
+res = res %>% subset(method %in% methods_use)
+res$method <- factor(res$method, levels = methods_use)
 
 median_cl_boot <- function(x, conf = 0.95) {
     lconf <- (1 - conf)/2
@@ -44,7 +46,7 @@ boot_df.l = lapply(levels(res$method), function(m) {
 
 names(boot_df.l) <- levels(res$method)
 boot_df = do.call(rbind, boot_df.l)
-boot_df$method = factor(rownames(boot_df), levels = c("Raw", "Seurat3", "LIGER", "SIMBA"))
+boot_df$method = factor(rownames(boot_df), levels = methods_use)
 
 options(repr.plot.width = 20, repr.plot.height = 5)
 df = subset(res, metric == "Anchoring_dist_rank_full") %>% arrange(value) %>% group_by(method) %>% mutate(rank = row_number())
@@ -53,7 +55,7 @@ p2 = ggplot(subset(res, metric == "Anchoring_dist"), aes(x = method, y = value, 
 p3 = ggplot(subset(res, metric == c("Silhouette")), aes(x = method, y = value, fill = method)) + ylab("Silhouette index") + geom_violin() + geom_boxplot(width = 0.1, alpha = 0, position = 'dodge') + theme_classic(base_size = 18) + scale_fill_manual(values = cbPalette) + theme(legend.position = "none")+ stat_summary(fun.data = median_cl_boot, geom = "errorbar", colour = "red")
 p4 = ggplot(boot_df, aes(x = method, y = y, color = method)) + ylab("Fraction in same cluster") + geom_point(shape = 4, size = 5, stroke = 2) + theme_classic(base_size = 18) + scale_color_manual(values = cbPalette) + theme(legend.position = "none") + geom_errorbar(aes(ymin=ymin, ymax=ymax))
 
-pdf(output_pdf, width = 20, height = 5)
+pdf(output_pdf, width = 20, height = 5, useDingbats = FALSE)
 ggarrange(p1, p2, p3, p4, ncol = 4)
 dev.off()
 
