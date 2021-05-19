@@ -11,7 +11,13 @@ if (length(args) < 4){ labels = FALSE } else{
 
 
 tbl <- read.table(umap_file, sep = "\t", head = T, stringsAsFactors = FALSE)
+colnames(tbl)[which(colnames(tbl) %in% c("celltype"))] <- "cell_type"
+colnames(tbl)[which(colnames(tbl) == "V1")] <- "UMAP_1"
+colnames(tbl)[which(colnames(tbl) == "V2")] <- "UMAP_2"
+
 tbl$cell_type[tbl$cell_type == "MHC_class_II"] <- 'MHC class II'
+tbl = tbl[sample(1:nrow(tbl)),]
+
 require(ggplot2)
 
 tbl$cell_type = factor(tbl$cell_type)

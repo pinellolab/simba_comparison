@@ -20,9 +20,10 @@ if (length(tbl$modality) == 0){tbl$modality = sapply(rownames(tbl), function(s) 
 tbl$modality = factor(tbl$modality)
 
 print(str(tbl$modality))
+tbl <- tbl[sample(1:nrow(tbl)),]
 
-p1 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "modality", raster = TRUE) + scale_color_manual(values = pal_batch)
-p2 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "cell_type", raster = TRUE)
+p1 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "modality", raster = TRUE, order = ) + scale_color_manual(values = pal_batch)
+p2 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "cell_type", raster = TRUE, order = )
 
 if (palette == "mouse-skin" || palette == "mouse-skin-subset"){
     #palette_celltype={'TAC-1':'#F8D856', 'TAC-2':'#F1B044', 'IRS':'#779ba1',               'Medulla':'#897a74','Hair Shaft-cuticle.cortex':"#d6a780"}
