@@ -1,4 +1,4 @@
-
+# Publicly shared scripts of Tran et al 2020 are adopted and modified by Jayoung Ryu
 # Author : Kok Siong Ang 
 # Date : 03/09/2019
 # Proj : Run Seurat 3 pipeline
@@ -14,7 +14,7 @@ library(cowplot)
 rm(list=ls())
 
 args = commandArgs(trailingOnly = TRUE)
-if ( length(args) != 4) {
+if ( length(args) != 5) {
     stop("Usage: Rscript run_script.R expr_filename metadata_filename dataset_name save_dir")
 }
 
@@ -30,7 +30,7 @@ norm_method = "LogNormalize"
 scale_factor = 10000
 numVG = 300
 nhvg = 2000
-npcs = 20
+npcs = as.numeric(args[5])
 visualize = T
 outfile_prefix = args[3]
 save_obj = T
@@ -41,6 +41,12 @@ dir.create(working_dir, recursive = TRUE)
 
 expr_filename = args[1]
 metadata_filename = args[2]
+
+if (outfile_prefix == "pancreas"){
+    min_cells= 10
+    min_genes = 300
+    print("Default cutoff set for pancreas data")
+}
 
 batch_label = "batchlb"
 celltype_label = "CellType"

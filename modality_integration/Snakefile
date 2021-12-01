@@ -89,6 +89,11 @@ rule create_umap:
         if not wildcards.software in ["SIMBA", "SIMBA-test"]:
             shell("Rscript run_umap_on_embedding.R {input} {output}")
 
+rule create_umap_all:
+    input:
+        expand("{software}/{dataset}/umap.txt", software = SOFTWARES, dataset = DATASETS)
+
+
 rule plot_umap:
     input:
         "{software}/{dataset}/umap.txt"
@@ -120,13 +125,13 @@ rule plot_all:
         expand("plots/metric_plot_{dataset}.pdf", dataset=DATASETS)
 
 
-rule get_common_cells:
-    input:
-        expand("{software}/{{dataset}}/integrated_embedding.txt", software=SOFTWARES)
-    output:
-        "metrics/cells_use_{dataset}.txt"
-    shell:
-        "Rscript metrics/get_common_cells.R {input} {output}"
+#rule get_common_cells:
+#    input:
+#        expand("{software}/{{dataset}}/integrated_embedding.txt", software=SOFTWARES)
+#    output:
+#        "metrics/cells_use_{dataset}.txt"
+#    shell:
+#        "Rscript metrics/get_common_cells.R {input} {output}"
 
 rule evaluate_metric_each:
     input:

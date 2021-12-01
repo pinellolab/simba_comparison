@@ -24,7 +24,6 @@ liger_preprocess <- function(expr_mat, metadata, batch_label = "batchlb", var.th
     return(expr_mat[,cells])
   })
   names(data) <- levels(metadata[,batch_label])
-  str(data) 
   ##########################################################
   # preprocessing
 
@@ -109,7 +108,7 @@ call_liger <- function(ligerex, metadata, batch_label, celltype_label,
   metadata <- metadata[cells_use,]
   ligerex_res$batchlb <- metadata[, batch_label]
   ligerex_res$celltype <- metadata[, celltype_label]
-  write.table(ligerex_res, file=paste0(saveout_dir,outfilename_prefix,"_LIGER_embedding.txt"), quote=F, sep='\t', row.names = T, col.names = NA)
+  write.table(ligerex_res, file=paste0(saveout_dir,outfilename_prefix,"_LIGER_embedding_D", k, ".txt"), quote=F, sep='\t', row.names = T, col.names = NA)
   
   if(save_obj) {
     saveRDS(ligerex, file=paste0(saveout_dir,outfilename_prefix,obj_filename,".RDS"))

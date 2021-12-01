@@ -51,6 +51,7 @@ get_celltype_common <- function(data_path){
 compute_lisi_annoy = function (X, meta_data, label_colnames, perplexity = 30, nn_eps = 0, metric = metric)
 {
     N <- nrow(meta_data)
+    metric = switch(metric, "cosine" = "cosine", "Euclidean" = "euclidean", "euclidean" = "euclidean")
     dknn <- Seurat:::AnnoyNN(data = as.matrix(X), metric = metric, k = perplexity * 3)
     lisi_df <- data.frame(matrix(NA, N, length(label_colnames)))
     lisi_df <- Reduce(cbind, lapply(label_colnames, function(label_colname) {

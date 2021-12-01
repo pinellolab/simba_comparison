@@ -22,19 +22,20 @@ tbl$modality = factor(tbl$modality)
 print(str(tbl$modality))
 tbl <- tbl[sample(1:nrow(tbl)),]
 
-p1 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "modality", raster = TRUE, order = ) + scale_color_manual(values = pal_batch)
-p2 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "cell_type", raster = TRUE, order = )
 
 if (palette == "mouse-skin" || palette == "mouse-skin-subset"){
     #palette_celltype={'TAC-1':'#F8D856', 'TAC-2':'#F1B044', 'IRS':'#779ba1',               'Medulla':'#897a74','Hair Shaft-cuticle.cortex':"#d6a780"}
     pal = c('#F8D856', '#F1B044', '#C37777', '#897a74', "#d6a780")
 
     tbl$cell_type = factor(tbl$cell_type, levels = c("TAC-1", "TAC-2", "IRS", "Medulla", "Hair_Shaft-cuticle.cortex"))
+    p1 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "modality", raster = TRUE) + scale_color_manual(values = pal_batch)
     p2 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "cell_type", raster = TRUE)
     p2 = p2 + scale_color_manual(values = pal)
 
 } else if (palette == "pbmc") {
     pal = c('#4c72b0', '#dd8452', '#55a868', '#c44e52', '#8172b3', '#937860', '#da8bc3', '#8c8c8c', '#ccb974', '#64b5cd', '#a1c9f4', '#ffb482', '#8de5a1', '#ff9f9b', '#d0bbff', '#debb9b', '#fab0e4', '#cfcfcf', '#fffea3')
+    p1 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "modality", raster = TRUE) + scale_color_manual(values = pal_batch)
+    p2 = Seurat:::SingleDimPlot(tbl, dims = c("UMAP_1", "UMAP_2"), col.by = "cell_type", raster = TRUE)
     p2 = p2 + scale_color_manual(values = pal)
 }
 

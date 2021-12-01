@@ -50,7 +50,7 @@ get_Louvain_clusters <- function(embedding, nClusters, max_steps = 100, dissim =
 }
 
 get_kmeans_clusters <- function(embedding, nClusters, max_steps = 100, dissim = "euclidean"){
-    if (dissim != "euclidean"){
+    if (! dissim %in% c("euclidean", "Euclidean")){
         print(paste0("For kmeans clustering method ", dissim, " distance not implemented"))
         stop()
     }

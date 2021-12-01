@@ -7,7 +7,7 @@ output_file = args[3]
 
 if (length(args) < 3) stop("Usage: Rscript convert.R input_h5ad metadata_file output_file")
 
-system(paste0("python ../convert_h5.py ", input_h5ad, " .tmp_embedding.txt"))
+system(paste0("python convert_h5_matched.py ", input_h5ad, " .tmp_embedding.txt"))
 
 dir.create(dirname(output_file))
 

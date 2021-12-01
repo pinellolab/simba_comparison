@@ -14,7 +14,7 @@ library(magrittr)
 rm(list=ls())
 
 args = commandArgs(trailingOnly = TRUE)
-if ( length(args) != 4) {
+if ( length(args) != 5) {
     stop("Usage: Rscript run_script.R expr_filename metadata_filename dataset_name save_dir")
 }
 
@@ -35,7 +35,7 @@ b_x_low_cutoff = 0.0125
 b_x_high_cutoff = 3
 b_y_cutoff = 0.5
 numVG = 300
-npcs = 20
+npcs = as.numeric(args[5])
 visualize = T
 outfile_prefix = args[3]
 save_obj = T

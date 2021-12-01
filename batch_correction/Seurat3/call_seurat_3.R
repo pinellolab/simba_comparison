@@ -100,7 +100,7 @@ call_seurat3 <- function(batch_list, batch_label, celltype_label, npcs = 50,
 #    seurat3_res$batch <- batches@meta.data[, ]
     seurat3_res$celltype <- batches@meta.data[, celltype_label]
     write.table(seurat3_res, file=paste0(saveout_dir,outfilename_prefix,pca_filename,".txt"), quote=F, sep='\t', row.names = T, col.names = NA)
-    write.table(seurat3_res, file=paste0(saveout_dir,outfilename_prefix,"_Seurat3_embedding.txt"), quote=F, sep='\t', row.names = T, col.names = NA)
+    write.table(seurat3_res, file=paste0(saveout_dir,outfilename_prefix,"_Seurat3_embedding_D", npcs, ".txt"), quote=F, sep='\t', row.names = T, col.names = NA)
     if(save_obj) {
       saveRDS(batches, file=paste0(saveout_dir,outfilename_prefix,obj_filename,".RDS"))
     }

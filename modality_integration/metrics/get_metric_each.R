@@ -13,7 +13,7 @@ stopifnot(metric %in% c("Silhouette", "Anchoring_dist_rank", "Anchoring_dist", "
 
 cells_use = read.table(cells_file, head = F, stringsAsFactors = F)$V1
 head(cells_use)
-embedding = read.table(embedding_file)
+embedding = read.table(embedding_file, head = T, sep = "\t", row.names = 1)
 embedding = embedding[cells_use, ]
 nDims = ncol(embedding)-2
 cell_identity = factor(embedding$batch)

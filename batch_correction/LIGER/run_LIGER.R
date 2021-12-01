@@ -16,7 +16,7 @@ library(ggplot2)
 rm(list=ls())
 
 args = commandArgs(trailingOnly = TRUE)
-if ( length(args) != 4) {
+if ( length(args) != 5) {
     stop("Usage: Rscript run_script.R expr_filename metadata_filename dataset_name save_dir")
 }
 
@@ -25,7 +25,7 @@ if ( length(args) != 4) {
 #settings
 
 var.thresh = 0.1
-k = 20
+k = as.numeric(args[5])
 nrep = 3
 visualize = T
 outfile_prefix = args[3]

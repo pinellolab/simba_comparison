@@ -21,5 +21,5 @@ df_umap.columns = ["UMAP_1", "UMAP_2"]
 df_umap['cell_type'] = adata.obs.celltype
 df_umap['cell_type'] = list(map(lambda x: str(x).replace(" ", "_"), df_umap['cell_type']))
 df_umap['batch'] = adata.obs.entity_group
-df_umap.to_csv(output_file, sep = "\t")
+df_umap.to_csv(umap_file, sep = "\t")
 
