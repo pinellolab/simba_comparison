@@ -3,7 +3,9 @@
 *.rds
 *.gz
 *.pdf
-*.DS_store
+
+# mac os
+*.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
