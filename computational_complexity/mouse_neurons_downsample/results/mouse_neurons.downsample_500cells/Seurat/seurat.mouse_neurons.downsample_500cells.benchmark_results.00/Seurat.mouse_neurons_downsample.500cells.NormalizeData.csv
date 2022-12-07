@@ -1,0 +1,5 @@
+"","c(mem_start_current = mem_info_start[9], mem_start_max = mem_info_start[10], mem_end_current = mem_info_end[9], mem_end_max = mem_info_end[10])"
+"mem_start_current",3259677
+"mem_start_max",10299366
+"mem_end_current",3482226
+"mem_end_max",13615372
